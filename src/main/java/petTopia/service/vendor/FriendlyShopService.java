@@ -114,9 +114,10 @@ public class FriendlyShopService {
             newFriendlyShop.setAddress(vendor.getAddress());
 
             BigDecimal[] latLng = getLatLng(vendor.getAddress());
-
-            newFriendlyShop.setLatitude(latLng[0]);
-            newFriendlyShop.setLongitude(latLng[1]);
+            if (latLng != null && latLng.length == 2) {
+                newFriendlyShop.setLatitude(latLng[0]);
+                newFriendlyShop.setLongitude(latLng[1]);
+            }
 
             FriendlyShop savedFriendlyShop = friendlyShopRepository.save(newFriendlyShop);
 
@@ -141,9 +142,10 @@ public class FriendlyShopService {
         friendlyShop.setAddress(vendor.getAddress());
 
         BigDecimal[] latLng = getLatLng(vendor.getAddress());
-
-        friendlyShop.setLatitude(latLng[0]);
-        friendlyShop.setLongitude(latLng[1]);
+        if (latLng != null && latLng.length == 2) {
+            friendlyShop.setLatitude(latLng[0]);
+            friendlyShop.setLongitude(latLng[1]);
+        }
 
         FriendlyShop savedFriendlyShop = friendlyShopRepository.save(friendlyShop);
 

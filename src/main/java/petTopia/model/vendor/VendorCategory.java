@@ -24,19 +24,16 @@ import lombok.Setter;
 @Table(name = "vendor_category")
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class VendorCategory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private Integer id;
+    @Column(name = "name")
+    private String name;
 
-	@Column(name = "name")
-	private String name;
-
-	@JsonIgnore
-	@OneToMany(fetch = FetchType.LAZY, mappedBy = "vendorCategory", cascade = CascadeType.ALL)
-	private List<Vendor> vendors;
-
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "vendorCategory", cascade = CascadeType.ALL)
+    private List<Vendor> vendors;
 }
