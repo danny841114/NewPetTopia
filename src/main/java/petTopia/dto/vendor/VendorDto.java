@@ -8,19 +8,11 @@ import lombok.Setter;
 @Getter
 @Setter
 public class VendorDto {
-	
     private Integer id;
-    
     private String name;
-    
     private String description;
-    
-	private float totalRating = 0;
-	
-	private byte[] logoImag;
-    
-	private String logoImgBase64;
-    
+    private float totalRating = 0;
+    private byte[] logoImage;
+    private String logoImgBase64;
     private List<ActivityDto> activityDtoList;
-    
 }

@@ -229,7 +229,7 @@ public class VendorActivityController {
 			vendorActivity.setEndTime(endTime);
 
 			Boolean isRegistrationRequired = Boolean.parseBoolean(is_registration_required);
-			vendorActivity.setIsRegistrationRequired(isRegistrationRequired); // 設置布林值
+			vendorActivity.setRegistrationRequired(isRegistrationRequired); // 設置布林值
 			List<VendorActivityImages> vendorActivityImagesList = new ArrayList<>();
 
 			for (MultipartFile oneFile : files) {
@@ -298,7 +298,7 @@ public class VendorActivityController {
 			vendorActivity.setActivityType(activity_type_id);
 
 			Boolean isRegistrationRequired = Boolean.parseBoolean(is_registration_required);
-			vendorActivity.setIsRegistrationRequired(isRegistrationRequired); // 設置布林值
+			vendorActivity.setRegistrationRequired(isRegistrationRequired); // 設置布林值
 
 			// 3. 刪除指定的圖片
 			if (deletedImageIds != null && !deletedImageIds.isEmpty()) {

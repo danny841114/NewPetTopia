@@ -3,27 +3,20 @@ package petTopia.service.vendor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.vendor.VendorCertificationTag;
 import petTopia.repository.vendor_admin.VendorCertificationTagRepository;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class VendorTagService {
-	@Autowired
-	private VendorCertificationTagRepository vendorCertificationTagRepository;
+    private final VendorCertificationTagRepository vendorCertificationTagRepository;
 
-	public List<VendorCertificationTag> findConfirmedTagByVendorId(Integer vendorId) {
-		List<VendorCertificationTag> tagList = vendorCertificationTagRepository.findByVendorId(vendorId);
-
-		List<VendorCertificationTag> confirmedList = new ArrayList<>();
-		for (VendorCertificationTag tag : tagList) {
-			if ("已認證".equals(tag.getCertification().getCertificationStatus())) {
-				confirmedList.add(tag);
-			}
-		}
-
-		return confirmedList;
-	}
+    public List<VendorCertificationTag> findConfirmedTagByVendorId(Integer vendorId) {
+        return vendorCertificationTagRepository.findByVendorIdAndCertificationCertificationStatus(vendorId, "已認證");
+    }
 }

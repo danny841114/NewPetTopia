@@ -1,135 +1,105 @@
 package petTopia.service.vendor;
 
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.vendor.ActivityType;
 import petTopia.model.vendor.VendorActivity;
 import petTopia.repository.vendor.VendorActivityRepository;
 import petTopia.repository.vendor_admin.ActivityTypeRepository;
 import petTopia.util.ImageConverter;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class VendorActivityService {
+    private final VendorActivityRepository vendorActivityRepository;
+    private final ActivityTypeRepository activityTypeRepository;
 
-	@Autowired
-	private VendorActivityRepository vendorActivityRepository;
+    public List<VendorActivity> findAllActivity() {
+        List<VendorActivity> activityList = vendorActivityRepository.findAll();
 
-	@Autowired
-	private ActivityTypeRepository activityTypeRepository;
+        // TODO: change base64 to byte[]
+        for (VendorActivity activity : activityList) {
+            byte[] logoImg = activity.getVendor().getLogoImg();
+            if (logoImg != null) {
+                String mimeType = ImageConverter.getMimeType(logoImg);
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
+                activity.getVendor().setLogoImgBase64(base64);
+            }
+        }
 
-	public List<VendorActivity> findAllActivity() {
-		List<VendorActivity> activityList = vendorActivityRepository.findAll();
+        return activityList;
+    }
 
-		for (VendorActivity activity : activityList) {
-			byte[] logoImg = activity.getVendor().getLogoImg();
-			if (logoImg != null) {
-				String mimeType = ImageConverter.getMimeType(logoImg);
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-				activity.getVendor().setLogoImgBase64(base64);
-			}
+    public VendorActivity findActivityById(Integer id) {
+        VendorActivity activity = vendorActivityRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-		}
+        // TODO: change base64 to byte[]
+        byte[] logoImg = activity.getVendor().getLogoImg();
+        if (logoImg != null) {
+            String mimeType = ImageConverter.getMimeType(logoImg);
+            String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
+            activity.getVendor().setLogoImgBase64(base64);
+        }
 
-		return activityList;
+        return activity;
+    }
 
-	}
+    // TODO: add JPQL
+    public List<VendorActivity> findAllActivityExceptOne(Integer activityId) {
+        List<VendorActivity> activityList = vendorActivityRepository.findAll();
 
-	public VendorActivity findActivityById(Integer id) {
-		VendorActivity activity = vendorActivityRepository.findById(id).orElse(null);
+        VendorActivity activityToRemove = vendorActivityRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-		byte[] logoImg = activity.getVendor().getLogoImg();
-		if (logoImg != null) {
-			String mimeType = ImageConverter.getMimeType(logoImg);
-			String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-			activity.getVendor().setLogoImgBase64(base64);
-		}
+        activityList.removeIf(v -> v.getId().equals(activityToRemove.getId()));
 
-		return activity;
-	}
+        return activityList;
+    }
 
-	public List<VendorActivity> findAllActivityExceptOne(Integer activityId) {
-		List<VendorActivity> activityList = vendorActivityRepository.findAll();
-		VendorActivity activityToRemove = vendorActivityRepository.findById(activityId).orElse(null);
+    // TODO: add JPQL
+    public List<VendorActivity> findActivityByTypeId(Integer typeId) {
+        ActivityType type = activityTypeRepository.findById(typeId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity type not found"));
 
-		if (activityToRemove != null) {
-			activityList.removeIf(v -> v.getId().equals(activityToRemove.getId()));
-		}
+        return vendorActivityRepository.findByActivityType(type);
+    }
 
-		return activityList;
-	}
+    public List<VendorActivity> findActivityByTypeIdExceptOne(Integer typeId, Integer activityId) {
+        ActivityType type = activityTypeRepository.findById(typeId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity type not found"));
 
-	public List<VendorActivity> findActivityByTypeId(Integer typeId) {
-		ActivityType type = activityTypeRepository.findById(typeId).orElse(null);
-		List<VendorActivity> activityList = vendorActivityRepository.findByActivityType(type);
-		return activityList;
-	}
+        List<VendorActivity> activityList = vendorActivityRepository.findByActivityType(type);
 
-	public List<VendorActivity> findActivityByTypeIdExceptOne(Integer typeId, Integer activityId) {
-		ActivityType type = activityTypeRepository.findById(typeId).orElse(null);
-		List<VendorActivity> activityList = vendorActivityRepository.findByActivityType(type);
-		VendorActivity activityToRemove = vendorActivityRepository.findById(activityId).orElse(null);
+        VendorActivity activityToRemove = vendorActivityRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-		if (activityToRemove != null) {
-			activityList.removeIf(activity -> activity.getId().equals(activityToRemove.getId())); // 刪除ID與activityToRemove相同ID相同之活動
-		}
+        activityList.removeIf(activity -> activity.getId().equals(activityToRemove.getId()));
 
-		return activityList;
-	}
+        return activityList;
+    }
 
-	/* 瀏覽數增加 */
-	public VendorActivity increaseNumberOfVisitor(Integer activityId) {
-		VendorActivity activity = vendorActivityRepository.findById(activityId).orElse(null);
+    @Transactional
+    public VendorActivity increaseNumberOfVisitor(Integer activityId) {
+        VendorActivity activity = vendorActivityRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-		Integer numberVisitor = activity.getNumberVisitor();
-		numberVisitor = numberVisitor + 1;
+        activity.setNumberVisitor(activity.getNumberVisitor() + 1);
+        return vendorActivityRepository.save(activity);
+    }
 
-		activity.setNumberVisitor(numberVisitor);
-		vendorActivityRepository.save(activity);
+    public List<VendorActivity> findVendorByNameOrDescription(String keyword) {
+        return vendorActivityRepository.findDistinctByNameContainingOrDescriptionContainingOrAddressContaining(keyword, keyword, keyword);
+    }
 
-		return activity;
-	}
-
-	/* 模糊搜尋活動 */
-	public List<VendorActivity> findVendorByNameOrDescription(String keyword) {
-		List<VendorActivity> list1 = vendorActivityRepository.findByNameContaining(keyword);
-		List<VendorActivity> list2 = vendorActivityRepository.findByDescriptionContaining(keyword);
-		List<VendorActivity> list3 = vendorActivityRepository.findByAddressContaining(keyword);
-
-		/* 使用set來過濾重複之資料 */
-		Set<Integer> set = new HashSet<>();
-		List<VendorActivity> finalList = new ArrayList<>();
-
-		for (VendorActivity v : list1) {
-			if (set.add(v.getId())) { // set.add(id)會回傳布林值，如果id沒出現過則加入
-				finalList.add(v);
-			}
-		}
-
-		for (VendorActivity v : list2) {
-			if (set.add(v.getId())) {
-				finalList.add(v);
-			}
-		}
-
-		for (VendorActivity v : list3) {
-			if (set.add(v.getId())) {
-				finalList.add(v);
-			}
-		}
-
-		return finalList;
-	}
-
-	/* 用店家ID搜尋活動 */
-	public List<VendorActivity> findActivityListByVendorId(Integer vendorId) {
-		List<VendorActivity> activityList = vendorActivityRepository.findByVendorId(vendorId);
-		return activityList;
-	}
+    public List<VendorActivity> findActivityListByVendorId(Integer vendorId) {
+        return vendorActivityRepository.findByVendorId(vendorId);
+    }
 }

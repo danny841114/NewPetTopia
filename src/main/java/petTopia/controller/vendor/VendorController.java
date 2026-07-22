@@ -68,7 +68,7 @@ public class VendorController {
 
     @GetMapping("/category/show")
     public ResponseEntity<List<VendorCategory>> getAllCategories() {
-        List<VendorCategory> categoryList = vendorCategoryService.findAllVendorCategory();
+        List<VendorCategory> categoryList = vendorCategoryService.findAllVendorCategoriesWithVendors();
         return ResponseEntity.ok(categoryList);
     }
 

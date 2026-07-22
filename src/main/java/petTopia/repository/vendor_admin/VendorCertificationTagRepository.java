@@ -15,6 +15,8 @@ public interface VendorCertificationTagRepository extends JpaRepository<VendorCe
 
 	List<VendorCertificationTag> findByVendorId(Integer vendorId);
 
+	List<VendorCertificationTag> findByVendorIdAndCertificationCertificationStatus(Integer vendorId, String status);
+
 	@Query("SELECT vc.tag.tagName FROM VendorCertificationTag vc WHERE vc.vendor.id IN :vendorIds")
 	List<String> findSlogansByVendorIds(@Param("vendorIds") List<Integer> vendorIds);
 

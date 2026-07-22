@@ -1,16 +1,15 @@
 package petTopia.service.vendor;
 
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.vendor.ActivityDto;
 import petTopia.dto.vendor.VendorDto;
 import petTopia.model.vendor.Vendor;
@@ -18,190 +17,175 @@ import petTopia.model.vendor.VendorActivity;
 import petTopia.repository.vendor.VendorRepository;
 import petTopia.util.ImageConverter;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class VendorService {
+    private final VendorRepository vendorRepository;
+    private final VendorReviewService vendorReviewService;
 
-	@Autowired
-	private VendorRepository vendorRepository;
-	
-	@Autowired
-	private VendorReviewService vendorReviewService;
+    /* 所有店家清單 */
+    public List<Vendor> findAllVendor() {
+        List<Vendor> vendorList = vendorRepository.findAll();
 
-	/* 所有店家清單 */
-	public List<Vendor> findAllVendor() {
-		List<Vendor> vendorList = vendorRepository.findAll();
+        // TODO: change base64 to byte[]
+        for (Vendor v : vendorList) {
+            byte[] logoImg = v.getLogoImg();
+            if (logoImg != null) {
+                String mimeType = ImageConverter.getMimeType(logoImg);
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
+                v.setLogoImgBase64(base64);
+            }
+        }
 
-		for (Vendor v : vendorList) {
-			byte[] logoImg = v.getLogoImg();
-			if (logoImg != null) {
-				String mimeType = ImageConverter.getMimeType(logoImg);
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-				v.setLogoImgBase64(base64);
-			}
-		}
+        return vendorList;
+    }
 
-		return vendorList;
-	}
+    /* 單一店家 */
+    public Vendor findVendorById(Integer vendorId) {
+        Optional<Vendor> optional = vendorRepository.findById(vendorId);
 
-	/* 單一店家 */
-	public Vendor findVendorById(Integer vendorId) {
-		Optional<Vendor> optional = vendorRepository.findById(vendorId);
+        if (optional.isPresent()) {
+            Vendor vendor = optional.get();
 
-		if (optional.isPresent()) {
-			Vendor vendor = optional.get();
+            // TODO: change base64 to byte[]
+            byte[] logoImg = vendor.getLogoImg();
+            String mimeType = ImageConverter.getMimeType(logoImg);
 
-			byte[] logoImg = vendor.getLogoImg();
-			String mimeType = ImageConverter.getMimeType(logoImg);
+            if (logoImg == null) {
+                vendor.setLogoImgBase64(null);
+            } else {
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
+                vendor.setLogoImgBase64(base64);
+            }
 
-			if (logoImg == null) {
-				vendor.setLogoImgBase64(null);
-			} else {
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-				vendor.setLogoImgBase64(base64);
-			}
+            return vendor;
+        }
 
-			return vendor;
-		}
+        return null;
+    }
 
-		return null;
-	}
+    /* 排除特定店家之清單 */
+    // TODO: JPQL
+    public List<Vendor> findAllVendorExceptOne(Integer vendorId) {
+        List<Vendor> vendorList = vendorRepository.findAll();
 
-	/* 排除特定店家之清單 */
-	public List<Vendor> findAllVendorExceptOne(Integer vendorId) {
-		List<Vendor> vendorList = vendorRepository.findAll();
-		Vendor vendorToRemove = vendorRepository.findById(vendorId).orElse(null);
+        Vendor vendorToRemove = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
 
-		if (vendorToRemove != null) {
-			vendorList.removeIf(v -> v.getId().equals(vendorToRemove.getId()));
-		}
+        vendorList.removeIf(v -> v.getId().equals(vendorToRemove.getId()));
 
-		for (Vendor v : vendorList) {
-			byte[] logoImg = v.getLogoImg();
-			if (logoImg != null) {
-				String mimeType = ImageConverter.getMimeType(logoImg);
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-				v.setLogoImgBase64(base64);
-			}
-		}
+        // TODO: change base64 to byte[]
+        for (Vendor v : vendorList) {
+            byte[] logoImg = v.getLogoImg();
+            if (logoImg != null) {
+                String mimeType = ImageConverter.getMimeType(logoImg);
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
+                v.setLogoImgBase64(base64);
+            }
+        }
 
-		return vendorList;
-	}
+        return vendorList;
+    }
 
-	/* 藉類別來找店家 */
-	public List<Vendor> findVendorByCategoryId(Integer categoryId) {
-		List<Vendor> vendorList = vendorRepository.findByVendorCategoryId(categoryId);
+    /* 藉類別來找店家 */
+    public List<Vendor> findVendorByCategoryId(Integer categoryId) {
+        List<Vendor> vendorList = vendorRepository.findByVendorCategoryId(categoryId);
 
-		for (Vendor v : vendorList) {
-			byte[] logoImg = v.getLogoImg();
-			if (logoImg != null) {
-				String mimeType = ImageConverter.getMimeType(logoImg);
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-				v.setLogoImgBase64(base64);
-			}
-		}
+        // TODO: change base64 to byte[]
+        for (Vendor v : vendorList) {
+            byte[] logoImg = v.getLogoImg();
+            if (logoImg != null) {
+                String mimeType = ImageConverter.getMimeType(logoImg);
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
+                v.setLogoImgBase64(base64);
+            }
+        }
 
-		return vendorList;
-	}
+        return vendorList;
+    }
 
-	/* 藉類別來找店家 */
-	public List<Vendor> findVendorByCategoryIdExceptOne(Integer categoryId, Integer vendorId) {
-		List<Vendor> vendorList = vendorRepository.findByVendorCategoryId(categoryId);
-		Vendor vendorToRemove = vendorRepository.findById(vendorId).orElse(null);
+    /* 藉類別來找店家 */
+    // TODO: JPQL
+    public List<Vendor> findVendorByCategoryIdExceptOne(Integer categoryId, Integer vendorId) {
+        List<Vendor> vendorList = vendorRepository.findByVendorCategoryId(categoryId);
 
-		if (vendorToRemove != null) {
-			vendorList.removeIf(v -> v.getId().equals(vendorToRemove.getId())); // 刪除ID與vendorToRemove相同ID相同之店家
-		}
+        Vendor vendorToRemove = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
 
-		for (Vendor v : vendorList) {
-			byte[] logoImg = v.getLogoImg();
-			if (logoImg != null) {
-				String mimeType = ImageConverter.getMimeType(logoImg);
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-				v.setLogoImgBase64(base64);
-			}
-		}
+        vendorList.removeIf(v -> v.getId().equals(vendorToRemove.getId()));
 
-		return vendorList;
-	}
+        // TODO: change base64 to byte[]
+        for (Vendor v : vendorList) {
+            byte[] logoImg = v.getLogoImg();
+            if (logoImg != null) {
+                String mimeType = ImageConverter.getMimeType(logoImg);
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
+                v.setLogoImgBase64(base64);
+            }
+        }
 
-	/* 模糊搜尋店家 */
-	public List<Vendor> findVendorByNameOrDescription(String keyword) {
-		List<Vendor> list1 = vendorRepository.findByNameContaining(keyword);
-		List<Vendor> list2 = vendorRepository.findByDescriptionContaining(keyword);
+        return vendorList;
+    }
 
-		/* 使用set來過濾重複之資料 */
-		Set<Integer> set = new HashSet<>();
-		List<Vendor> finalList = new ArrayList<>();
+    /* 模糊搜尋店家 */
+    public List<Vendor> findVendorByNameOrDescription(String keyword) {
+        List<Vendor> vendors = vendorRepository.findByNameContainingOrDescriptionContaining(keyword, keyword);
 
-		for (Vendor v : list1) {
-			if (set.add(v.getId())) { // set.add(id)會回傳布林值，如果id沒出現過則加入
-				finalList.add(v);
-			}
-		}
+        // TODO: change base64 to byte[]
+        for (Vendor vendor : vendors) {
+            byte[] imageByte = vendor.getLogoImg();
+            if (imageByte != null) {
+                String mimeType = ImageConverter.getMimeType(imageByte);
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(imageByte);
+                vendor.setLogoImgBase64(base64);
+            }
+        }
 
-		for (Vendor v : list2) {
-			if (set.add(v.getId())) {
-				finalList.add(v);
-			}
-		}
+        return vendors;
+    }
 
-		for (Vendor vendor : finalList) {
-			byte[] imageByte = vendor.getLogoImg();
-			if (imageByte != null) {
-				String mimeType = ImageConverter.getMimeType(imageByte);
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(imageByte);
-				vendor.setLogoImgBase64(base64);
-			}
-		}
+    /* 取得所有 Vendor DTO */
+    public List<VendorDto> getAllVendorDto() {
+        return vendorRepository.findAll()
+                .stream()
+                .map(this::convertVendorToDto)
+                .collect(Collectors.toList());
+    }
 
-		return finalList;
-	}
+    private VendorDto convertVendorToDto(Vendor vendor) {
+        VendorDto vendorDto = new VendorDto();
+        vendorDto.setId(vendor.getId());
+        vendorDto.setName(vendor.getName());
+        vendorDto.setDescription(vendor.getDescription());
 
-	/* Activity DTO */
-	public ActivityDto convertActivityToDto(VendorActivity activity) {
-		ActivityDto activityDto = new ActivityDto();
-		activityDto.setActivityId(activity.getId());
-		activityDto.setActivityName(activity.getName());
-		activityDto.setActivityDescription(activity.getDescription());
-		return activityDto;
-	}
+        /* 確保載入時有最新評分 */
+        Vendor vendorForAvgRating = vendorReviewService.setAverageRating(vendor.getId());
+        vendorDto.setTotalRating(vendorForAvgRating.getTotalRating());
 
-	/* Vendor DTO */
-	public VendorDto convertVendorToDto(Vendor vendor) {
-		VendorDto vendorDto = new VendorDto();
-		vendorDto.setId(vendor.getId());
-		vendorDto.setName(vendor.getName());
-		vendorDto.setDescription(vendor.getDescription());
-		
-		/* 確保載入時有最新評分 */
-		Vendor vendorForAvgRating = vendorReviewService.setAverageRating(vendor.getId());
-		vendorDto.setTotalRating(vendorForAvgRating.getTotalRating());
+        // TODO: change base64 to byte[]
+        byte[] logoImg = vendor.getLogoImg();
+        if (logoImg != null) {
+            String mimeType = ImageConverter.getMimeType(logoImg);
+            String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
+            vendorDto.setLogoImgBase64(base64);
+        }
 
-		byte[] logoImg = vendor.getLogoImg();
-		if (logoImg != null) {
-			String mimeType = ImageConverter.getMimeType(logoImg);
-			String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-			vendorDto.setLogoImgBase64(base64);
-		}
+        List<ActivityDto> activityDtoList = vendor.getActivities()
+                .stream()
+                .map(this::convertActivityToDto)
+                .collect(Collectors.toList());
 
-		List<ActivityDto> activityDtoList = vendor.getActivities().stream().map(this::convertActivityToDto)
-				.collect(Collectors.toList());
+        vendorDto.setActivityDtoList(activityDtoList);
 
-		vendorDto.setActivityDtoList(activityDtoList);
+        return vendorDto;
+    }
 
-		return vendorDto;
-	}
-	
-	/* 取得所有 Vendor DTO */
-	public List<VendorDto> getAllVendorDto() {
-	    List<Vendor> vendorList = vendorRepository.findAll();
-	    List<VendorDto> vendorDtoList = new ArrayList<>();
-
-	    for (Vendor vendor : vendorList) {
-	    	VendorDto dto = convertVendorToDto(vendor);
-	    	vendorDtoList.add(dto);
-	    }
-
-	    return vendorDtoList;
-	}
+    private ActivityDto convertActivityToDto(VendorActivity activity) {
+        return ActivityDto.builder()
+                .activityId(activity.getId())
+                .activityName(activity.getName())
+                .activityDescription(activity.getDescription())
+                .build();
+    }
 }

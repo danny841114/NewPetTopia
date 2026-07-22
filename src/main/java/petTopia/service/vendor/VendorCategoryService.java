@@ -1,37 +1,31 @@
 package petTopia.service.vendor;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.vendor.VendorCategory;
 import petTopia.repository.vendor.VendorCategoryRepository;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class VendorCategoryService {
-	@Autowired
-	private VendorCategoryRepository vendorCategoryRepository;
+    private final VendorCategoryRepository vendorCategoryRepository;
 
-	public List<VendorCategory> findAllVendorCategory() {
-		List<VendorCategory> categoryList = vendorCategoryRepository.findAll(Sort.by(Sort.Direction.ASC, "id"));
+    public List<VendorCategory> findAllVendorCategoriesWithVendors() {
+        return this.findAllVendorCategories()
+                .stream()
+                .filter(c -> !c.getVendors().isEmpty())
+                .collect(Collectors.toList());
+    }
 
-		List<VendorCategory> filterdCategoryList = new ArrayList<>();
-
-		// 過濾類別內無店家之類別
-		for (VendorCategory category : categoryList) {
-			if (!category.getVendors().isEmpty()) {
-				filterdCategoryList.add(category);
-			}
-		}
-
-		return filterdCategoryList;
-	}
-
-	public List<VendorCategory> findAllIncludeNoVendor() {
-		List<VendorCategory> categoryList = vendorCategoryRepository.findAll(Sort.by(Sort.Direction.ASC, "id"));
-		return categoryList;
-	}
+    public List<VendorCategory> findAllVendorCategories() {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        return vendorCategoryRepository.findAll(sort);
+    }
 }

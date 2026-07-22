@@ -274,7 +274,7 @@ public class FriendlyShopService {
     /* 刪除友善店家 */
     @Transactional
     public void deleteFriendlyShop(Integer id) {
-        friendlyShopRepository.deleteById(id);
+        friendlyShopRepository.findById(id).ifPresent(friendlyShopRepository::delete);
     }
 
     /* 獲取友善店家 */

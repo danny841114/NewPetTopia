@@ -91,7 +91,7 @@ public class FriendlyShopController {
 
     @GetMapping("/category/for/friendly_shop")
     public ResponseEntity<?> getAllCategories() {
-        List<VendorCategory> categoryList = vendorCategoryService.findAllIncludeNoVendor();
+        List<VendorCategory> categoryList = vendorCategoryService.findAllVendorCategories();
         return ResponseEntity.ok(categoryList);
     }
 }
