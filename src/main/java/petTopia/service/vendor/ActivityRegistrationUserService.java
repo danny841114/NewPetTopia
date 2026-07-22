@@ -3,9 +3,11 @@ package petTopia.service.vendor;
 import java.util.Base64;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.user.Member;
 import petTopia.model.vendor.ActivityPeopleNumber;
 import petTopia.model.vendor.ActivityRegistration;
@@ -16,144 +18,133 @@ import petTopia.repository.vendor_admin.ActivityPeopleNumberRepository;
 import petTopia.repository.vendor_admin.ActivityRegistrationRepository;
 import petTopia.util.ImageConverter;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class ActivityRegistrationUserService {
+    private final MemberRepository memberRepository;
+    private final VendorActivityRepository vendorActivityRepository;
+    private final ActivityRegistrationRepository activityRegistrationRepository;
+    private final ActivityPeopleNumberRepository activityPeopleNumberRepository;
 
-	@Autowired
-	private MemberRepository memberRepository;
+    @Transactional
+    public boolean toggleRegistration(Integer memberId, Integer activityId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
-	@Autowired
-	private VendorActivityRepository vendorActivityRepository;
+        VendorActivity activity = vendorActivityRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
-	@Autowired
-	private ActivityRegistrationRepository activityRegistrationRepository;
+        ActivityRegistration registration = activityRegistrationRepository.findByMemberAndVendorActivity(member, activity);
 
-	@Autowired
-	private ActivityPeopleNumberRepository activityPeopleNumberRepository;
+        Integer count = activityRegistrationRepository.countByVendorActivityId(activityId);
 
-	/* 報名與取消活動 */
-	public boolean toggleRegistration(Integer memberId, Integer activityId) {
-		Member member = memberRepository.findById(memberId).orElse(null);
-		VendorActivity activity = vendorActivityRepository.findById(activityId).orElse(null);
-		ActivityRegistration registration = activityRegistrationRepository.findByMemberAndVendorActivity(member,
-				activity);
+        ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findByVendorActivityId(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity people number not found"));
 
-		// 從報名名單中找出正確的報名人數
-		Integer count = activityRegistrationRepository.countByVendorActivityId(activityId);
+        if (registration == null) {
+            ActivityRegistration newRegistration = new ActivityRegistration();
+            newRegistration.setMember(member);
+            newRegistration.setVendorActivity(activity);
+            activityRegistrationRepository.save(newRegistration);
 
-		if (registration == null) {
-			ActivityRegistration newRegistration = new ActivityRegistration();
-			newRegistration.setMember(member);
-			newRegistration.setVendorActivity(activity);
-			activityRegistrationRepository.save(newRegistration);
+            peopleNumber.setCurrentParticipants(count + 1);
+            activityPeopleNumberRepository.save(peopleNumber);
 
-			ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findByVendorActivityId(activityId);
-			Integer currentParticipants = peopleNumber.getCurrentParticipants();
-			currentParticipants = count + 1;
-			peopleNumber.setCurrentParticipants(currentParticipants);
-			activityPeopleNumberRepository.save(peopleNumber);
+            return true;
+        } else {
+            activityRegistrationRepository.delete(registration);
 
-			return true;
-		} else {
-			Integer registrationId = registration.getId();
-			activityRegistrationRepository.deleteById(registrationId);
+            peopleNumber.setCurrentParticipants(count - 1);
+            activityPeopleNumberRepository.save(peopleNumber);
 
-			ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findByVendorActivityId(activityId);
-			Integer currentParticipants = peopleNumber.getCurrentParticipants();
-			currentParticipants = count - 1;
-			peopleNumber.setCurrentParticipants(currentParticipants);
-			activityPeopleNumberRepository.save(peopleNumber);
+            return false;
+        }
+    }
 
-			return false;
-		}
-	}
+    public boolean getRegistrationStatus(Integer memberId, Integer activityId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
-	/* 獲取報名狀態(有報名或沒有報名) */
-	public boolean getRegistrationStatus(Integer memberId, Integer activityId) {
-		Member member = memberRepository.findById(memberId).orElse(null);
-		VendorActivity activity = vendorActivityRepository.findById(activityId).orElse(null);
-		ActivityRegistration registration = activityRegistrationRepository.findByMemberAndVendorActivity(member,
-				activity);
+        VendorActivity activity = vendorActivityRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-		if (registration != null) {
-			return true;
-		} else {
-			return false;
-		}
-	}
+        ActivityRegistration registration = activityRegistrationRepository.findByMemberAndVendorActivity(member, activity);
 
-	/* 獲取報名未核准清單 */
-	public List<ActivityRegistration> getActivityPendingList(Integer activityId) {
-		List<ActivityRegistration> pendingList = activityRegistrationRepository
-				.findByVendorActivityIdAndStatus(activityId, "pending");
+        return registration != null;
+    }
 
-		for (ActivityRegistration registration : pendingList) {
-			byte[] photoByte = registration.getMember().getProfilePhoto();
-			if (photoByte != null) {
-				String mimeType = ImageConverter.getMimeType(photoByte);
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(photoByte);
-				registration.getMember().setProfilePhotoBase64(base64);
-			}
-		}
+    // should not return base64 string
+    public List<ActivityRegistration> getActivityPendingList(Integer activityId) {
+        String status = "pending";
+        List<ActivityRegistration> pendingList = activityRegistrationRepository.findByVendorActivityIdAndStatus(activityId, status);
 
-		return pendingList;
-	}
+        for (ActivityRegistration registration : pendingList) {
+            byte[] photoByte = registration.getMember().getProfilePhoto();
+            if (photoByte != null) {
+                String mimeType = ImageConverter.getMimeType(photoByte);
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(photoByte);
+                registration.getMember().setProfilePhotoBase64(base64);
+            }
+        }
 
-	/* 獲取報名核准清單 */
-	public List<ActivityRegistration> getActivityConfirmedList(Integer activityId) {
-		List<ActivityRegistration> confirmedList = activityRegistrationRepository
-				.findByVendorActivityIdAndStatus(activityId, "confirmed");
+        return pendingList;
+    }
 
-		for (ActivityRegistration registration : confirmedList) {
-			byte[] photoByte = registration.getMember().getProfilePhoto();
-			if (photoByte != null) {
-				String mimeType = ImageConverter.getMimeType(photoByte);
-				String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(photoByte);
-				registration.getMember().setProfilePhotoBase64(base64);
-			}
-		}
+    // should not return base64 string
+    public List<ActivityRegistration> getActivityConfirmedList(Integer activityId) {
+        String status = "confirmed";
+        List<ActivityRegistration> confirmedList = activityRegistrationRepository.findByVendorActivityIdAndStatus(activityId, status);
 
-		return confirmedList;
-	}
+        for (ActivityRegistration registration : confirmedList) {
+            byte[] photoByte = registration.getMember().getProfilePhoto();
+            if (photoByte != null) {
+                String mimeType = ImageConverter.getMimeType(photoByte);
+                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(photoByte);
+                registration.getMember().setProfilePhotoBase64(base64);
+            }
+        }
 
-	/* 取得活動當前與最大人數 */
-	public ActivityPeopleNumber getPeopleNumber(Integer activityId) {
-		ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findByVendorActivityId(activityId);
+        return confirmedList;
+    }
 
-		// 取得該活動當前報名人數並更新
-		Integer number = activityRegistrationRepository.countByVendorActivityId(activityId);
-		peopleNumber.setCurrentParticipants(number);
-		activityPeopleNumberRepository.save(peopleNumber);
+    @Transactional
+    public ActivityPeopleNumber getPeopleNumber(Integer activityId) {
+        ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findByVendorActivityId(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity people number not found"));
 
-		return peopleNumber;
-	}
+        Integer number = activityRegistrationRepository.countByVendorActivityId(activityId);
+        peopleNumber.setCurrentParticipants(number);
+        activityPeopleNumberRepository.save(peopleNumber);
 
-	/* 是否達到報名人數上限 */
-	public boolean isActivityAvailable(Integer activityId) {
-		ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findById(activityId).orElse(null);
+        return peopleNumber;
+    }
 
-		Integer current = peopleNumber.getCurrentParticipants();
-		Integer max = peopleNumber.getMaxParticipants();
-		if (current == max) {
-			return false;
-		} else {
-			return true;
-		}
+    public boolean isActivityAvailable(Integer activityId) {
+        ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity people number not found"));
 
-	}
+        Integer current = peopleNumber.getCurrentParticipants();
+        Integer max = peopleNumber.getMaxParticipants();
 
-	/* 查詢單一會員報名的活動 */
-	public List<ActivityRegistration> findRegistrationListByMemberId(Integer memberId) {
-		List<ActivityRegistration> list = activityRegistrationRepository.findAllByMemberId(memberId);
-		return list;
-	}
+        if (current == null || max == null) {
+            return false;
+        }
 
-	/* 藉ID刪除報名 */
-	public boolean deleteByRegistrationId(Integer likeId) {
-		if (activityRegistrationRepository.existsById(likeId)) {
-			activityRegistrationRepository.deleteById(likeId);
-			return true;
-		}
-		return false;
-	}
+        return current <= max;
+    }
+
+    public List<ActivityRegistration> findRegistrationListByMemberId(Integer memberId) {
+        return activityRegistrationRepository.findAllByMemberId(memberId);
+    }
+
+    @Transactional
+    public boolean deleteByRegistrationId(Integer likeId) {
+        if (activityRegistrationRepository.existsById(likeId)) {
+            activityRegistrationRepository.deleteById(likeId);
+            return true;
+        }
+
+        return false;
+    }
 }

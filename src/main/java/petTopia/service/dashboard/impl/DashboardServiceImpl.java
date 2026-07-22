@@ -1,4 +1,4 @@
-package petTopia.service.impl;
+package petTopia.service.dashboard.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,7 +8,6 @@ import petTopia.repository.shop.ProductRepository;
 import petTopia.repository.user.MemberRepository;
 import petTopia.repository.vendor.VendorActivityRepository;
 import petTopia.repository.vendor.VendorRepository;
-import petTopia.service.DashboardService;
 
 @Service
 public class DashboardServiceImpl implements DashboardService {

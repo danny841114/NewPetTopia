@@ -1,12 +1,13 @@
 package petTopia.service.vendor;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.vendor.ActivityLikeDto;
 import petTopia.model.user.Member;
 import petTopia.model.vendor.ActivityLike;
@@ -15,88 +16,83 @@ import petTopia.repository.user.MemberRepository;
 import petTopia.repository.vendor.ActivityLikeRepository;
 import petTopia.repository.vendor.VendorActivityRepository;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class ActivityLikeService {
+    private final ActivityLikeRepository activityLikeRepository;
+    private final VendorActivityRepository vendorActivityRepository;
+    private final MemberRepository memberRepository;
 
-	@Autowired
-	private ActivityLikeRepository activityLikeRepository;
+    public Boolean getActivityLikeStatus(Integer memberId, Integer activityId) {
+        ActivityLike activityLike = activityLikeRepository.findByMemberIdAndVendorActivityId(memberId, activityId);
+        return activityLike != null;
+    }
 
-	@Autowired
-	private VendorActivityRepository vendorActivityRepository;
+    @Transactional
+    public boolean toggleActivityLike(Integer memberId, Integer activityId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
-	@Autowired
-	private MemberRepository memberRepository;
+        VendorActivity activity = vendorActivityRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-	/* 取得活動收藏狀態 */
-	public Boolean getActivityLikeStatus(Integer memberId, Integer activityId) {
-		ActivityLike activityLike = activityLikeRepository.findByMemberIdAndVendorActivityId(memberId, activityId);
+        ActivityLike activityLike = activityLikeRepository.findByMemberIdAndVendorActivityId(memberId, activityId);
 
-		if (activityLike != null) {
-			return true;
-		} else {
-			return false;
-		}
-	}
+        if (activityLike == null) {
+            ActivityLike newActivityLike = new ActivityLike();
+            newActivityLike.setMember(member);
+            newActivityLike.setVendorActivity(activity);
+            activityLikeRepository.save(newActivityLike);
+            return true;
+        } else {
+            activityLikeRepository.delete(activityLike);
+            return false;
+        }
+    }
 
-	/* 新增或取消活動收藏 */
-	public boolean toggleActivityLike(Integer memberId, Integer activityId) {
-		Optional<Member> member = memberRepository.findById(memberId);
-		Optional<VendorActivity> vendorActivity = vendorActivityRepository.findById(activityId);
-		ActivityLike activityLike = activityLikeRepository.findByMemberIdAndVendorActivityId(memberId, activityId);
+    // N+1 problem is existing
+    public List<ActivityLikeDto> finLikesByActivityId(Integer activityId) {
+        VendorActivity activity = vendorActivityRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-		if (activityLike == null) {
-			ActivityLike newActivityLike = new ActivityLike();
-			newActivityLike.setMember(member.get());
-			newActivityLike.setVendorActivity(vendorActivity.get());
-			activityLikeRepository.save(newActivityLike);
-			return true;
-		} else {
-			Integer activityLikeId = activityLike.getId();
-			activityLikeRepository.deleteById(activityLikeId);
-			return false;
-		}
-	}
+        List<ActivityLike> likeList = activityLikeRepository.findByVendorActivity(activity);
 
-	/* 將Member和ActivityLike轉換成DTO */
-	public ActivityLikeDto ConvertActivityLikeToDto(Member member, ActivityLike like) {
-		ActivityLikeDto dto = new ActivityLikeDto();
-		dto.setId(like.getId());
-		dto.setVendorId(like.getVendorActivity().getVendor().getId());
-		dto.setActivityId(like.getVendorActivity().getId());
-		dto.setMemberId(member.getId());
-		dto.setName(member.getName());
-		dto.setGender(member.getGender());
-		dto.setProfilePhoto(member.getProfilePhoto());
-		return dto;
-	}
+        return likeList.stream()
+                .map(this::fromEntity)
+                .collect(Collectors.toList());
+    }
 
-	/* 查詢某個vendorId所有收藏之DTO */
-	public List<ActivityLikeDto> findMemberLikeListByActivityId(Integer activityId) {
-		VendorActivity activity = vendorActivityRepository.findById(activityId).orElse(null);
-		List<ActivityLike> likeList = activityLikeRepository.findByVendorActivity(activity);
+    public List<ActivityLike> findLikeListByMemberId(Integer memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+        return activityLikeRepository.findByMember(member);
+    }
 
-		List<ActivityLikeDto> dtoList = likeList.stream().map(like -> {
-			Member member = memberRepository.findById(like.getMember().getId()).get();
-			return ConvertActivityLikeToDto(member, like);
-		}).collect(Collectors.toList());
+    @Transactional
+    public boolean deleteByLikeId(Integer likeId) {
+        if (activityLikeRepository.existsById(likeId)) {
+            activityLikeRepository.deleteById(likeId);
+            return true;
+        }
 
-		return dtoList;
-	}
+        return false;
+    }
 
-	/* 查詢某個memberId所有收藏的活動 */
-	public List<ActivityLike> findLikeListByMemberId(Integer memberId) {
-		Member member = memberRepository.findById(memberId).orElse(null);
-		List<ActivityLike> likeList = activityLikeRepository.findByMember(member);
-		return likeList;
-	}
+    private ActivityLikeDto fromEntity(ActivityLike like) {
+        Integer likeMemberId = like.getMember().getId();
+        Member member = memberRepository.findById(likeMemberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
-	/* 藉ID刪除收藏 */
-	public boolean deleteByLikeId(Integer likeId) {
-		if (activityLikeRepository.existsById(likeId)) {
-			activityLikeRepository.deleteById(likeId);
-			return true;
-		}
-		return false;
-	}
+        ActivityLikeDto dto = new ActivityLikeDto();
+        dto.setId(like.getId());
+        dto.setVendorId(like.getVendorActivity().getVendor().getId());
+        dto.setActivityId(like.getVendorActivity().getId());
+        dto.setMemberId(member.getId());
+        dto.setName(member.getName());
+        dto.setGender(member.getGender());
+        dto.setProfilePhoto(member.getProfilePhoto());
 
+        return dto;
+    }
 }

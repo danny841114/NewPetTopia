@@ -1,6 +1,7 @@
 package petTopia.repository.vendor;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -9,14 +10,11 @@ import petTopia.model.vendor.Vendor;
 import petTopia.model.vendor.VendorCategory;
 
 public interface FriendlyShopRepository extends JpaRepository<FriendlyShop, Integer> {
+    Optional<FriendlyShop> findFirstByVendor(Vendor vendor);
 
-	public FriendlyShop findFirstByVendor(Vendor vendor);
+    List<FriendlyShop> findByNameContaining(String name);
 
-	public List<FriendlyShop> findByNameContaining(String name);
+    List<FriendlyShop> findByVendor(Vendor vendor);
 
-	public List<FriendlyShop> findByVendor(Vendor vendor);
-
-	public List<FriendlyShop> findByVendorCategory(VendorCategory vendorCategory);
-
-	List<FriendlyShop> findByVendorCategoryIsNull();
+    List<FriendlyShop> findByVendorCategory(VendorCategory vendorCategory);
 }

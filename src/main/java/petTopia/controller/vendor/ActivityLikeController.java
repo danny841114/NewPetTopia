@@ -20,7 +20,7 @@ public class ActivityLikeController {
 
     @GetMapping("/{activityId}/like")
     public ResponseEntity<List<ActivityLikeDto>> getActivityLikeList(@PathVariable Integer activityId) {
-        List<ActivityLikeDto> likeList = activityLikeService.findMemberLikeListByActivityId(activityId);
+        List<ActivityLikeDto> likeList = activityLikeService.finLikesByActivityId(activityId);
         return ResponseEntity.ok(likeList);
     }
 

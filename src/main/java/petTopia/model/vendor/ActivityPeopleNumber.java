@@ -15,7 +15,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
 @Entity
 @Table(name = "activity_people_number")
 @Getter
@@ -23,18 +22,18 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ActivityPeopleNumber {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-	@JsonIgnore
-	@OneToOne
-	@JoinColumn(name = "vendor_activity_id", nullable = false)
-	private VendorActivity vendorActivity;
+    @JsonIgnore
+    @OneToOne
+    @JoinColumn(name = "vendor_activity_id", nullable = false)
+    private VendorActivity vendorActivity;
 
-	@Column(name = "max_participants", nullable = false)
-	private int maxParticipants;
+    @Column(name = "max_participants", nullable = false)
+    private Integer maxParticipants;
 
-	@Column(name = "current_participants", nullable = false)
-	private int currentParticipants = 0;
+    @Column(name = "current_participants", nullable = false)
+    private Integer currentParticipants = 0;
 }

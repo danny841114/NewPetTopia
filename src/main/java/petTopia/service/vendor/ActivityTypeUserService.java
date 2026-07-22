@@ -1,34 +1,24 @@
 package petTopia.service.vendor;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.vendor.ActivityType;
 import petTopia.repository.vendor_admin.ActivityTypeRepository;
 
-
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class ActivityTypeUserService {
-	
-	@Autowired
-	private ActivityTypeRepository activityTypeRepository;
-	
-	public List<ActivityType> findAllActivityType(){
-		List<ActivityType> typeList = activityTypeRepository.findAll();
-		
-		List<ActivityType> filterdList = new ArrayList<>();
+    private final ActivityTypeRepository activityTypeRepository;
 
-		
-		// 過濾類別內無店家之類別
-		for (ActivityType type : typeList) {
-			if (!type.getVendorActivities().isEmpty()) {
-				filterdList.add(type);
-			}
-		}
-		
-		return filterdList;
-	}
+    public List<ActivityType> findAllActivityType() {
+        return activityTypeRepository.findAll().stream()
+                .filter(activityType -> !activityType.getVendorActivities().isEmpty())
+                .collect(Collectors.toList());
+    }
 }
