@@ -1,6 +1,7 @@
 package petTopia.service.vendor;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -24,9 +25,9 @@ public class ActivityLikeService {
     private final VendorActivityRepository vendorActivityRepository;
     private final MemberRepository memberRepository;
 
-    public Boolean getActivityLikeStatus(Integer memberId, Integer activityId) {
-        ActivityLike activityLike = activityLikeRepository.findByMemberIdAndVendorActivityId(memberId, activityId);
-        return activityLike != null;
+    public boolean getActivityLikeStatus(Integer memberId, Integer activityId) {
+        Optional<ActivityLike> optional = activityLikeRepository.findByMemberIdAndVendorActivityId(memberId, activityId);
+        return optional.isPresent();
     }
 
     @Transactional
@@ -37,16 +38,16 @@ public class ActivityLikeService {
         VendorActivity activity = vendorActivityRepository.findById(activityId)
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-        ActivityLike activityLike = activityLikeRepository.findByMemberIdAndVendorActivityId(memberId, activityId);
+        Optional<ActivityLike> optional = activityLikeRepository.findByMemberIdAndVendorActivityId(memberId, activityId);
 
-        if (activityLike == null) {
+        if (optional.isEmpty()) {
             ActivityLike newActivityLike = new ActivityLike();
             newActivityLike.setMember(member);
             newActivityLike.setVendorActivity(activity);
             activityLikeRepository.save(newActivityLike);
             return true;
         } else {
-            activityLikeRepository.delete(activityLike);
+            activityLikeRepository.delete(optional.get());
             return false;
         }
     }
