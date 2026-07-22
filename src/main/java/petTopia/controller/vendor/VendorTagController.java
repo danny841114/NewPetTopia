@@ -2,25 +2,22 @@ package petTopia.controller.vendor;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import petTopia.model.vendor.VendorCertificationTag;
 import petTopia.service.vendor.VendorTagService;
 
-@CrossOrigin
+@RequiredArgsConstructor
 @RestController
+@RequestMapping("/api/vendor")
 public class VendorTagController {
-	@Autowired
-	private VendorTagService vendorTagService;
+    private final VendorTagService vendorTagService;
 
-	@GetMapping("/api/vendor/{vendorId}/tag")
-	public ResponseEntity<List<VendorCertificationTag>> getVendorTagList(@PathVariable Integer vendorId) {
-		List<VendorCertificationTag> tagList = vendorTagService.findConfirmedTagByVendorId(vendorId);
-		return ResponseEntity.ok(tagList);
-	}
+    @GetMapping("/api/vendor/{vendorId}/tag")
+    public ResponseEntity<List<VendorCertificationTag>> getVendorTagList(@PathVariable Integer vendorId) {
+        List<VendorCertificationTag> tagList = vendorTagService.findConfirmedTagByVendorId(vendorId);
+        return ResponseEntity.ok(tagList);
+    }
 }

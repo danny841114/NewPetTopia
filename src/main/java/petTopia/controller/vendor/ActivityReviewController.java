@@ -4,73 +4,61 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import petTopia.dto.vendor.ActivityReviewDto;
 import petTopia.model.vendor.VendorActivityReview;
 import petTopia.service.vendor.VendorActivityReviewService;
 
+@RequiredArgsConstructor
 @RestController
+@RequestMapping("/api/activity")
 public class ActivityReviewController {
+    private final VendorActivityReviewService vendorActivityReviewService;
 
-	@Autowired
-	private VendorActivityReviewService vendorActivityReviewService;
+    @GetMapping("/{activityId}/review")
+    public ResponseEntity<List<ActivityReviewDto>> getActivityReview(@PathVariable Integer activityId) {
+        List<ActivityReviewDto> reviewList = vendorActivityReviewService.findReviewListByActivityId(activityId);
+        return ResponseEntity.ok(reviewList);
+    }
 
-	@GetMapping("/api/activity/{activityId}/review")
-	public ResponseEntity<List<ActivityReviewDto>> getActivityReview(@PathVariable Integer activityId) {
-		List<ActivityReviewDto> reviewList = vendorActivityReviewService.findReviewListByActivityId(activityId);
-		return ResponseEntity.ok(reviewList);
-	}
+    @GetMapping("/review/{reviewId}")
+    public ResponseEntity<?> getActivityReviewById(@PathVariable Integer reviewId) {
+        VendorActivityReview review = vendorActivityReviewService.findReviewById(reviewId);
+        return ResponseEntity.ok(Map.of("review", review));
+    }
 
-	@GetMapping("/api/activity/review/{reviewId}")
-	public Map<String, Object> getActivityReviewById(@PathVariable Integer reviewId) {
-		VendorActivityReview review = vendorActivityReviewService.findReviewById(reviewId);
-		Map<String, Object> response = new HashMap<>();
-		response.put("review", review);
-		return response;
-	}
-	
-	@PostMapping("/api/activity/{activityId}/review/add")
-	public Map<String, Object> addReview(@PathVariable Integer activityId, @RequestBody Map<String, String> data) {
-		Integer memberId = Integer.parseInt(data.get("memberId"));
-		String content = data.get("content");
-		VendorActivityReview review = vendorActivityReviewService.addReview(memberId, activityId, content);
-		Map<String, Object> response = new HashMap<>();
-		response.put("success", true);
-		response.put("review", review);
-		return response;
-	}
+    @PostMapping("/{activityId}/review/add")
+    public ResponseEntity<?> addReview(@PathVariable Integer activityId, @RequestBody Map<String, String> data) {
+        Integer memberId = Integer.parseInt(data.get("memberId"));
+        String content = data.get("content");
+        VendorActivityReview review = vendorActivityReviewService.addReview(memberId, activityId, content);
 
-	@PutMapping("/api/activity/review/{reviewId}/rewrite")
-	public Map<String, Object> rewriteReview(@PathVariable Integer reviewId, @RequestBody Map<String, String> data) {
-		String content = data.get("content");
-		VendorActivityReview review = vendorActivityReviewService.rewriteReviewById(reviewId, content);
-		Map<String, Object> response = new HashMap<>();
-		response.put("review", review);
-		return response;
-	}
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("review", review);
 
-	@DeleteMapping("/api/activity/review/{reviewId}/delete")
-	public Map<String, Object> deleteReview(@PathVariable Integer reviewId) {
-		vendorActivityReviewService.deleteReviewById(reviewId);
-		Map<String, Object> response = new HashMap<>();
-		response.put("success", true);
-		return response;
-	}
-	
-	@GetMapping("/api/activity/{activityId}/member/{memberId}/review/exist")
-	public Map<String, Object> getReviewIsExisted(@PathVariable Integer activityId,@PathVariable Integer memberId) {
-		boolean isExisted = vendorActivityReviewService.getReviewIsExisted(memberId,activityId);
-		Map<String, Object> response = new HashMap<>();
-		response.put("action", isExisted ? true : false);
-		return response;
-	}
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/review/{reviewId}/rewrite")
+    public ResponseEntity<?> rewriteReview(@PathVariable Integer reviewId, @RequestBody Map<String, String> data) {
+        String content = data.get("content");
+        VendorActivityReview review = vendorActivityReviewService.rewriteReviewById(reviewId, content);
+        return ResponseEntity.ok(Map.of("review", review));
+    }
+
+    @DeleteMapping("/review/{reviewId}/delete")
+    public ResponseEntity<?> deleteReview(@PathVariable Integer reviewId) {
+        vendorActivityReviewService.deleteReviewById(reviewId);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @GetMapping("/{activityId}/member/{memberId}/review/exist")
+    public ResponseEntity<?> getReviewIsExisted(@PathVariable Integer activityId, @PathVariable Integer memberId) {
+        boolean isExisted = vendorActivityReviewService.getReviewIsExisted(memberId, activityId);
+        return ResponseEntity.ok(Map.of("action", isExisted));
+    }
 }
