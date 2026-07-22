@@ -32,56 +32,55 @@ import lombok.NoArgsConstructor;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class VendorActivity {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-	@ManyToOne
-	@JoinColumn(name = "vendor_id", nullable = false)
-	private Vendor vendor;
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
 
-	@Column(name = "name", nullable = false)
-	private String name;
+    @Column(name = "name", nullable = false)
+    private String name;
 
-	@Column(name = "description", nullable = false)
-	private String description;
+    @Column(name = "description", nullable = false)
+    private String description;
 
-	@Column(name = "start_time", nullable = false)
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date startTime;
+    @Column(name = "start_time", nullable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date startTime;
 
-	@Column(name = "end_time", nullable = false)
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date endTime;
+    @Column(name = "end_time", nullable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date endTime;
 
-	@Column(name = "is_registration_required", nullable = false)
-	private boolean registrationRequired = false;
+    @Column(name = "is_registration_required", nullable = false)
+    private boolean registrationRequired = false;
 
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "activity_type_id", nullable = false)
-	private ActivityType activityType;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "activity_type_id", nullable = false)
+    private ActivityType activityType;
 
-	@Column(name = "registration_date", updatable = false)
-	private Date registrationDate = new Date();
+    @Column(name = "registration_date", updatable = false)
+    private Date registrationDate = new Date();
 
-	@Column(name = "number_visitor", nullable = false)
-	private Integer numberVisitor = 0;
+    @Column(name = "number_visitor", nullable = false)
+    private Integer numberVisitor = 0;
 
-	@Column(name = "address", nullable = false)
-	private String address;
+    @Column(name = "address", nullable = false)
+    private String address;
 
-	// TODO: keep one
-	@JsonIgnore
-	@OneToMany(mappedBy = "vendorActivity", cascade = CascadeType.ALL)
-	private List<VendorActivityImages> vendorActivityImages;
+    // TODO: keep one
+    @JsonIgnore
+    @OneToMany(mappedBy = "vendorActivity", cascade = CascadeType.ALL)
+    private List<VendorActivityImages> vendorActivityImages;
 
-	@JsonIgnore
-	@BatchSize(size = 20)
-	@OneToMany(mappedBy = "vendorActivity", cascade = CascadeType.ALL)
-	private List<VendorActivityImages> images;
+    @JsonIgnore
+    @BatchSize(size = 20)
+    @OneToMany(mappedBy = "vendorActivity", cascade = CascadeType.ALL)
+    private List<VendorActivityImages> images;
 
-	@OneToOne(mappedBy = "vendorActivity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private ActivityPeopleNumber activityPeopleNumber;
+    @OneToOne(mappedBy = "vendorActivity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ActivityPeopleNumber activityPeopleNumber;
 }

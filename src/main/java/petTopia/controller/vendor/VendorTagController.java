@@ -15,7 +15,7 @@ import petTopia.service.vendor.VendorTagService;
 public class VendorTagController {
     private final VendorTagService vendorTagService;
 
-    @GetMapping("/api/vendor/{vendorId}/tag")
+    @GetMapping("/{vendorId}/tag")
     public ResponseEntity<List<VendorCertificationTag>> getVendorTagList(@PathVariable Integer vendorId) {
         List<VendorCertificationTag> tagList = vendorTagService.findConfirmedTagByVendorId(vendorId);
         return ResponseEntity.ok(tagList);

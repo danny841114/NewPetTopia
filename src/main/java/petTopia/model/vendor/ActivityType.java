@@ -1,12 +1,9 @@
 package petTopia.model.vendor;
 
-
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.CascadeType;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,17 +21,15 @@ import lombok.Setter;
 @Table(name = "activity_type")
 @Entity
 public class ActivityType {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private Integer id;
+    @Column(name = "name", nullable = false, unique = true)
+    private String name;
 
-	@Column(name = "name", nullable = false, unique = true)
-	private String name;
-
-	@JsonIgnore
-	@OneToMany(mappedBy = "activityType", cascade = CascadeType.ALL)
-	private List<VendorActivity> VendorActivities;
-
+    @JsonIgnore
+    @OneToMany(mappedBy = "activityType", cascade = CascadeType.ALL)
+    private List<VendorActivity> VendorActivities;
 }

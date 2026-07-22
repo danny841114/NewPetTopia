@@ -81,10 +81,10 @@ public class FriendlyShopService {
                 }
             }
 
-            log.warn("Longitude and latitude not found");
+            log.warn("Longitude and latitude of {} not found", address);
             return null;
         } catch (Exception e) {
-            log.error("Get longitude and latitude failed", e);
+            log.error("Get longitude and latitude of {} failed", address, e);
             return null;
         } finally {
             if (connection != null) {
