@@ -2,6 +2,7 @@ package petTopia.service.vendor;
 
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -35,14 +36,14 @@ public class ActivityRegistrationUserService {
         VendorActivity activity = vendorActivityRepository.findById(activityId)
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
-        ActivityRegistration registration = activityRegistrationRepository.findByMemberAndVendorActivity(member, activity);
+        Optional<ActivityRegistration> registrationOptional = activityRegistrationRepository.findByMemberAndVendorActivity(member, activity);
 
         Integer count = activityRegistrationRepository.countByVendorActivityId(activityId);
 
         ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findByVendorActivityId(activityId)
                 .orElseThrow(() -> new EntityNotFoundException("Activity people number not found"));
 
-        if (registration == null) {
+        if (registrationOptional.isEmpty()) {
             ActivityRegistration newRegistration = new ActivityRegistration();
             newRegistration.setMember(member);
             newRegistration.setVendorActivity(activity);
@@ -53,7 +54,7 @@ public class ActivityRegistrationUserService {
 
             return true;
         } else {
-            activityRegistrationRepository.delete(registration);
+            activityRegistrationRepository.delete(registrationOptional.get());
 
             peopleNumber.setCurrentParticipants(count - 1);
             activityPeopleNumberRepository.save(peopleNumber);
@@ -69,9 +70,9 @@ public class ActivityRegistrationUserService {
         VendorActivity activity = vendorActivityRepository.findById(activityId)
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-        ActivityRegistration registration = activityRegistrationRepository.findByMemberAndVendorActivity(member, activity);
+        Optional<ActivityRegistration> registrationOptional = activityRegistrationRepository.findByMemberAndVendorActivity(member, activity);
 
-        return registration != null;
+        return registrationOptional.isPresent();
     }
 
     // should not return base64 string
