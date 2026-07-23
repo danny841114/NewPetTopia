@@ -1,10 +1,7 @@
 package petTopia.service.vendor_admin;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.vendor_admin.CertificationDTO;
+import petTopia.dto.vendor_admin.VendorCertificationDto;
 import petTopia.model.vendor.CertificationTag;
 import petTopia.model.vendor.Vendor;
 import petTopia.model.vendor.VendorCertification;
@@ -130,7 +128,57 @@ public class VendorCertificationService {
         return vendorCertificationRepository.save(certification);
     }
 
-    private CertificationDTO formCertificationDto(VendorCertification certification, List<CertificationDTO.CertificationTagDTO> tagDtoList) {
+    @Transactional
+    public void cancelCertificationById(Integer certificationId) {
+        if (vendorCertificationRepository.existsById(certificationId)) {
+            vendorCertificationRepository.deleteById(certificationId);
+        }
+    }
+
+    public List<VendorCertificationDto> getCertificationByVendorId(Integer vendorId) {
+        List<VendorCertificationTag> tags = vendorCertificationTagRepository.findByVendorId(vendorId);
+
+        List<Integer> certificationIds = tags.stream()
+                .map(tag -> tag.getCertification().getId())
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<VendorCertification> vendorCertifications = vendorCertificationRepository.findByIdIn(certificationIds);
+
+        return vendorCertifications.stream()
+                .map(certification -> getVendorCertificationDto(certification, tags))
+                .collect(Collectors.toList());
+    }
+
+    private VendorCertificationDto getVendorCertificationDto(VendorCertification certification,
+                                                             List<VendorCertificationTag> tags) {
+        VendorCertificationDto.TagDto tagDto = tags.stream()
+                .filter(tag -> tag.getCertification().getId().equals(certification.getId()))
+                .findFirst()
+                .map(this::fromEntity)
+                .orElse(null);
+
+        return VendorCertificationDto.builder()
+                .id(certification.getId())
+                .vendor(certification.getVendor())
+                .certificationStatus(certification.getCertificationStatus())
+                .reason(certification.getReason())
+                .requestDate(certification.getRequestDate())
+                .approvedDate(certification.getApprovedDate())
+                .tag(tagDto)
+                .build();
+    }
+
+    private VendorCertificationDto.TagDto fromEntity(VendorCertificationTag tag) {
+        return VendorCertificationDto.TagDto.builder()
+                .id(tag.getId())
+                .tag(tag.getTag())
+                .meetsStandard(tag.isMeetsStandard())
+                .build();
+    }
+
+    private CertificationDTO formCertificationDto(VendorCertification certification,
+                                                  List<CertificationDTO.CertificationTagDTO> tagDtoList) {
         return CertificationDTO.builder()
                 .vendor(certification.getVendor())
                 .certificationId(certification.getId())

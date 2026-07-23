@@ -2,9 +2,7 @@ package petTopia.controller.vendor_admin;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,112 +10,63 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import petTopia.dto.vendor_admin.request.AddCalendarEventRequest;
+import petTopia.dto.vendor_admin.request.UpdateCalendarEventRequest;
 import petTopia.model.vendor.CalendarEvent;
-import petTopia.model.vendor.Vendor;
-import petTopia.model.vendor.VendorActivity;
-import petTopia.repository.vendor.CalendarEventRepository;
-import petTopia.repository.vendor.VendorActivityRepository;
-import petTopia.repository.vendor.VendorRepository;
+import petTopia.service.vendor_admin.VendorCalendarEventService;
 
 @Slf4j
 @RequiredArgsConstructor
 @RestController
 public class VendorCalendarEventController {
-    private final VendorRepository vendorRepository;
-    private final CalendarEventRepository calendarEventRepository;
-    private final VendorActivityRepository vendorActivityRepository;
+    private final VendorCalendarEventService vendorCalendarEventService;
 
     @GetMapping("/api/vendor_admin/calendar/{vendorId}")
-    public ResponseEntity<?> getCalenderEventsByVendorId(@PathVariable Integer vendorId) {
-        Optional<Vendor> optional = vendorRepository.findById(vendorId);
-
-        if (optional.isPresent()) {
-            List<CalendarEvent> calender = calendarEventRepository.findByVendorId(vendorId);
-            return ResponseEntity.ok(calender);
-        }
-
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<?> getCalenderEvents(@PathVariable Integer vendorId) {
+        List<CalendarEvent> calenderEvents = vendorCalendarEventService.getCalenderEventsByVendorId(vendorId);
+        return ResponseEntity.ok(calenderEvents);
     }
 
+    // TODO: REQUEST PARAM TO BODY
     @PostMapping("/api/vendor_admin/calendar/add")
     public ResponseEntity<?> addCalendarEvent(@RequestParam Integer vendorId,
                                               @RequestParam String eventTitle,
                                               @RequestParam("start_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date startTime,
                                               @RequestParam("end_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date endTime,
                                               @RequestParam String color) {
-        try {
-            Vendor vendor = vendorRepository.findById(vendorId)
-                    .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
+        AddCalendarEventRequest request = new AddCalendarEventRequest();
 
-            CalendarEvent calendarEvent = new CalendarEvent();
-            calendarEvent.setEventTitle(eventTitle);
-            calendarEvent.setStartTime(startTime);
-            calendarEvent.setEndTime(endTime);
-            calendarEvent.setVendor(vendor);
-            calendarEvent.setCreatedAt(new Date());
-            calendarEvent.setUpdatedAt(new Date());
-            calendarEvent.setColor(color);
-            CalendarEvent savedCalendarEvent = calendarEventRepository.save(calendarEvent);
+        request.setVendorId(vendorId);
+        request.setEventTitle(eventTitle);
+        request.setStartTime(startTime);
+        request.setEndTime(endTime);
+        request.setColor(color);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedCalendarEvent);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        CalendarEvent calendarEvent = vendorCalendarEventService.addCalendarEvent(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(calendarEvent);
     }
 
+    // TODO: REQUEST PARAM TO BODY
     @PutMapping("/api/vendor_admin/calendar/update/{id}")
     public ResponseEntity<?> updateCalendar(@PathVariable Integer id,
                                             @RequestParam(required = false) String eventTitle,
                                             @RequestParam("start_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date startTime,
                                             @RequestParam("end_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date endTime,
                                             @RequestParam(required = false) String color) {
-        Optional<CalendarEvent> calendarOpt = calendarEventRepository.findByEventId(id);
-        if (calendarOpt.isPresent()) {
-            CalendarEvent calendarEvent = calendarOpt.get();
+        UpdateCalendarEventRequest request = new UpdateCalendarEventRequest();
 
-            calendarEvent.setEventTitle(eventTitle);
-            calendarEvent.setStartTime(startTime);
-            calendarEvent.setEndTime(endTime);
-            calendarEvent.setColor(color);
-            calendarEvent.setUpdatedAt(new Date());
+        request.setEventTitle(eventTitle);
+        request.setStartTime(startTime);
+        request.setEndTime(endTime);
+        request.setColor(color);
 
-            calendarEventRepository.save(calendarEvent);
-
-            if (calendarEvent.getVendorActivity() != null) {
-                Integer activityId = calendarOpt.get().getVendorActivity().getId();
-                Optional<CalendarEvent> calendarOpt2 = calendarEventRepository.findByVendorActivityId(activityId);
-                if (calendarOpt2.isPresent()) {
-                    Optional<VendorActivity> vendorActivityOpt = vendorActivityRepository.findById(activityId);
-
-                    if (vendorActivityOpt.isPresent()) {
-                        VendorActivity vendorActivity = vendorActivityOpt.get();
-
-                        vendorActivity.setName(eventTitle);
-                        vendorActivity.setStartTime(startTime);
-                        vendorActivity.setEndTime(endTime);
-
-                        vendorActivityRepository.save(vendorActivity);
-                    }
-                }
-            }
-
-            return ResponseEntity.ok(calendarEvent);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        CalendarEvent calendarEvent = vendorCalendarEventService.updateCalendar(id, request);
+        return ResponseEntity.ok(calendarEvent);
     }
 
     @DeleteMapping("/api/vendor_admin/calendar/delete/{id}")
     public ResponseEntity<?> deleteCalendar(@PathVariable Integer id) {
-        Optional<CalendarEvent> calendarOpt = calendarEventRepository.findByEventId(id);
-
-        if (calendarOpt.isPresent()) {
-            CalendarEvent calendarEvent = calendarOpt.get();
-            calendarEventRepository.delete(calendarEvent);
-            return ResponseEntity.ok(calendarEvent);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        vendorCalendarEventService.deleteCalendarById(id);
+        return ResponseEntity.noContent().build();
     }
 }
