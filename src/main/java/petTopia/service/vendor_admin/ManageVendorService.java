@@ -1,57 +1,56 @@
 package petTopia.service.vendor_admin;
 
 import java.util.List;
+import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.vendor.Vendor;
 import petTopia.repository.vendor.VendorRepository;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class ManageVendorService {
+    private final VendorRepository vendorRepository;
 
-	@Autowired
-	private VendorRepository vendorRepository;
+    public List<Vendor> getAllVendors(Integer categoryId, Boolean status) {
+        if (categoryId == null && status == null) {
+            return vendorRepository.findAll();
+        } else if (categoryId != null && status == null) {
+            return vendorRepository.findByVendorCategoryId(categoryId);
+        } else if (categoryId == null && status != null) {
+            return vendorRepository.findByStatus(status);
+        } else {
+            return vendorRepository.findByVendorCategoryIdAndStatus(categoryId, status);
+        }
+    }
 
-	/** 📌 取得所有店家（可分類） */
-	public List<Vendor> getAllVendors(Integer categoryId, Boolean status) {
-	    if (categoryId == null && (status == null)) {
-	        // 如果类别和状态都没有指定，返回所有商家
-	        return vendorRepository.findAll();
-	    } else if (categoryId != null && (status == null)) {
-	        // 如果只筛选类别
-	        return vendorRepository.findByVendorCategoryId(categoryId);
-	    } else if (categoryId == null && status != null) {
-	        // 如果只筛选状态
-	        return vendorRepository.findByStatus(status);
-	    } else {
-	        // 如果两个筛选条件都有，则同时筛选
-	        return vendorRepository.findByVendorCategoryIdAndStatus(categoryId, status);
-	    }
-	}
+    @Transactional
+    public boolean updateVendorStatus(Integer id, boolean status) {
+        Optional<Vendor> vendorOptional = vendorRepository.findById(id);
 
+        if (vendorOptional.isPresent()) {
+            Vendor vendor = vendorOptional.get();
+            vendor.setStatus(status);
 
+            vendorRepository.save(vendor);
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-	/** 📌 更新單個店家狀態 */
-	@Transactional
-	public boolean updateVendorStatus(Integer id, boolean status) {
-		return vendorRepository.findById(id).map(vendor -> {
-			vendor.setStatus(status);
-			vendorRepository.save(vendor);
-			return true;
-		}).orElse(false);
-	}
+    @Transactional
+    public boolean bulkUpdateVendorStatus(List<Integer> vendorIds, boolean status) {
+        if (vendorIds == null || vendorIds.isEmpty()) {
+            vendorRepository.updateAllVendorStatus(status);
+        } else {
+            vendorRepository.updateVendorStatusByIds(vendorIds, status);
+        }
 
-	/** 📌 批量更新店家狀態 */
-	@Transactional
-	public boolean bulkUpdateVendorStatus(List<Integer> vendorIds, boolean status) {
-		if (vendorIds == null || vendorIds.isEmpty()) {
-			vendorRepository.updateAllVendorStatus(status);
-		} else {
-			vendorRepository.updateVendorStatusByIds(vendorIds, status);
-		}
-		return true;
-	}
+        return true;
+    }
 }

@@ -1,19 +1,18 @@
 package petTopia.service.vendor_admin;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureOrder;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.repository.vendor_admin.VendorCertificationTagRepository;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class VendorCertificationTagService {
+    private final VendorCertificationTagRepository vendorCertificationTagRepository;
 
-	@Autowired
-	private VendorCertificationTagRepository vendorCertificationTagRepository;
-	
-	public boolean checkIfExists(int vendorId, int certificationTagId) {
-	    return vendorCertificationTagRepository.existsByVendorIdAndTagId(vendorId, certificationTagId);
-	}
-
+    public boolean checkIfExists(int vendorId, int certificationTagId) {
+        return vendorCertificationTagRepository.existsByVendorIdAndTagId(vendorId, certificationTagId);
+    }
 }

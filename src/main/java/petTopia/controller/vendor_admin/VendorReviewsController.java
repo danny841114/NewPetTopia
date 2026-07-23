@@ -1,26 +1,18 @@
 package petTopia.controller.vendor_admin;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import petTopia.model.vendor.ReviewPhoto;
@@ -29,143 +21,108 @@ import petTopia.repository.vendor.ReviewPhotoRepository;
 import petTopia.repository.vendor.VendorReviewRepository;
 import petTopia.service.vendor_admin.VendorReviewsServiceAdmin;
 
-@Controller
+@Slf4j
+@RequiredArgsConstructor
+@RestController
 public class VendorReviewsController {
+    private final VendorReviewsServiceAdmin vendorReviewsService;
+    private final VendorReviewRepository vendorReviewRepository;
+    private final ReviewPhotoRepository reviewPhotoRepository;
 
-	@Autowired
-	private VendorReviewsServiceAdmin vendorReviewsService;
+    @GetMapping("/api/vendor_admin/reviews/{vendorId}")
+    public ResponseEntity<?> getAllReviews() {
+        List<VendorReview> reviews = vendorReviewRepository.findAll();
+        return ResponseEntity.ok(reviews);
+    }
 
-	@Autowired
-	private VendorReviewRepository vendorReviewRepository;
+    @GetMapping("/api/vendor_admin/review")
+    public ResponseEntity<?> getReviewsByVendorId(@RequestParam Integer vendorId) {
+        List<VendorReview> vendorReviews = vendorReviewsService.getReviewsByVendorId(vendorId);
+        return ResponseEntity.ok(vendorReviews);
+    }
 
-	@Autowired
-	private ReviewPhotoRepository reviewPhotoRepository;
+    @GetMapping("/api/vendor_admin/review/photos/{reviewId}")
+    public List<ReviewPhoto> getPhotosByReviewId(@PathVariable Integer reviewId) {
+        return vendorReviewsService.getPhotosByReviewId(reviewId);
+    }
 
-	@GetMapping("/vendor_admin/reviews")
-	public String getReviewsPage() {
-		return "vendor_admin/vendor_admin_reviews";
-	}
+    @GetMapping("/review_photos/ids")
+    public ResponseEntity<?> findPhotoIdByVendorReviewId(@RequestParam Integer vendorReviewId) {
+        Optional<VendorReview> op = vendorReviewRepository.findById(vendorReviewId);
 
-	@ResponseBody
-	@GetMapping("/api/vendor_admin/reviews/{vendorId}")
-	public ResponseEntity<?> getAllReviews() {
-		List<VendorReview> reviews = vendorReviewRepository.findAll();
-		if (reviews.isEmpty()) {
-			return ResponseEntity.ok(Collections.emptyList()); // ✅ 返回空数组 []
-		}
-		return ResponseEntity.ok(reviews);
-	}
+        if (op.isPresent()) {
+            VendorReview vendorReviews = op.get();
+            List<Integer> photoIdList = new ArrayList<>();
+            vendorReviews.getReviewPhotos()
+                    .forEach(photo -> photoIdList.add(photo.getId()));
 
-	// 取得店家的所有評論
-	@ResponseBody
-	@GetMapping("/api/vendor_admin/review")
-	public ResponseEntity<?> getReviewsByVendorId(@RequestParam Integer vendorId) {
-		List<VendorReview> vendorReviews = vendorReviewsService.getReviewsByVendorId(vendorId);
-		if (vendorReviews.isEmpty()) {
-			return ResponseEntity.ok(Collections.emptyList()); // ✅ 返回空数组 []
-		}
-		return ResponseEntity.ok(vendorReviews);
-	}
+            return ResponseEntity.ok(photoIdList);
+        }
 
-	// 取得評論的所有照片
-	@GetMapping("/api/vendor_admin/review/photos/{reviewId}")
-	public List<ReviewPhoto> getPhotosByReviewId(@PathVariable Integer reviewId) {
-		return vendorReviewsService.getPhotosByReviewId(reviewId);
-	}
+        return ResponseEntity.notFound().build();
+    }
 
-	@GetMapping("/review_photos/ids")
-	public ResponseEntity<?> findPhotoIdByVendorReviewId(@RequestParam Integer vendorReviewId) {
-		Optional<VendorReview> op = vendorReviewRepository.findById(vendorReviewId);
+    @GetMapping("/review_photos/download")
+    public ResponseEntity<?> downloadPhotoById(@RequestParam Integer photoId) {
+        Optional<ReviewPhoto> photoOpt = reviewPhotoRepository.findById(photoId);
 
-		List<Integer> photoIdList = new ArrayList<>();
+        if (photoOpt.isPresent()) {
+            byte[] photoFile = photoOpt.get().getPhoto();
 
-		if (op.isPresent()) {
-			VendorReview vendorReviews = op.get();
-			List<ReviewPhoto> photos = vendorReviews.getReviewPhotos();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_JPEG);
 
-			for (ReviewPhoto photo : photos) {
-				photoIdList.add(photo.getId()); // 假設每個 VendorActivityPhoto 實體有一個 id 字段
-			}
+            return ResponseEntity.ok().headers(headers).body(photoFile);
+        }
 
-			return new ResponseEntity<>(photoIdList, HttpStatus.OK); // 返回所有照片的 ID 列表
-		}
+        return ResponseEntity.notFound().build();
+    }
 
-		return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 如果沒有找到活動，返回 404
-	}
+    @PostMapping("/api/vendor_admin/review/add")
+    public ResponseEntity<?> addReview(@RequestBody VendorReview review,
+                                       @RequestPart(value = "photo", required = false) MultipartFile photo) {
+        try {
+            VendorReview vendorReviews = new VendorReview();
 
-	@GetMapping("/review_photos/download")
-	public ResponseEntity<?> downloadPhotoById(@RequestParam Integer photoId) {
-		Optional<ReviewPhoto> photoOpt = reviewPhotoRepository.findById(photoId);
+            vendorReviews.setVendorId(review.getVendorId());
+            vendorReviews.setMemberId(review.getMemberId());
+            vendorReviews.setReviewContent(review.getReviewContent());
+            vendorReviews.setReviewTime(review.getReviewTime());
+            vendorReviews.setRatingEnvironment(review.getRatingEnvironment());
+            vendorReviews.setRatingPrice(review.getRatingPrice());
+            vendorReviews.setRatingService(review.getRatingService());
 
-		if (photoOpt.isPresent()) {
-			ReviewPhoto image = photoOpt.get();
-			byte[] photoFile = image.getPhoto(); // 假設每個 VendorActivityPhoto 實體有一個 photoFile 字段，存儲圖片二進制數據
+            VendorReview savedReview = vendorReviewRepository.save(vendorReviews);
 
-			HttpHeaders headers = new HttpHeaders();
-			headers.setContentType(MediaType.IMAGE_JPEG); // 假設圖片是 JPEG 格式
+            if (photo != null && !photo.isEmpty()) {
+                ReviewPhoto reviewPhoto = new ReviewPhoto();
 
-			return new ResponseEntity<>(photoFile, headers, HttpStatus.OK); // 返回圖片的二進制數據
-		}
+                reviewPhoto.setVendorReview(savedReview);
+                reviewPhoto.setPhoto(photo.getBytes()); // 转换为 byte[]
 
-		return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 如果找不到圖片，返回 404
-	}
+                reviewPhotoRepository.save(reviewPhoto); // 保存图片
+            }
 
-	// 新增評論
-//	@Transactional
-	@ResponseBody
-	@PostMapping("/api/vendor_admin/review/add")
-	public ResponseEntity<?> addReview(@RequestBody VendorReview review,
-			@RequestPart(value = "photo", required = false) MultipartFile photo) {
-		try {
-			// 假设saveReview是保存评论的方法
-			VendorReview vendorReviews = new VendorReview();
-//			vendorReviews.setId(review.getId());
-			vendorReviews.setVendorId(review.getVendorId());
-			vendorReviews.setMemberId(review.getMemberId());
-			vendorReviews.setReviewContent(review.getReviewContent());
-			vendorReviews.setReviewTime(review.getReviewTime());
-			vendorReviews.setRatingEnvironment(review.getRatingEnvironment());
-			vendorReviews.setRatingPrice(review.getRatingPrice());
-			vendorReviews.setRatingService(review.getRatingService());
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+        } catch (Exception e) {
+            log.error("Add review failed", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to add review");
+        }
+    }
 
-			VendorReview savedReview = vendorReviewRepository.save(vendorReviews);
+    @DeleteMapping("/api/vendor_admin/review/delete/{reviewId}")
+    public ResponseEntity<?> deleteReview(@PathVariable Integer reviewId) {
+        Optional<VendorReview> review = vendorReviewRepository.findById(reviewId);
 
-			// 如果有上传图片，保存图片
-			if (photo != null && !photo.isEmpty()) {
-				ReviewPhoto reviewPhoto = new ReviewPhoto();
-				reviewPhoto.setVendorReview(savedReview);
-				reviewPhoto.setPhoto(photo.getBytes()); // 转换为 byte[]
-				reviewPhotoRepository.save(reviewPhoto); // 保存图片
-			}
+        Map<String, String> response = new HashMap<>();
 
-			return new ResponseEntity<>(savedReview, HttpStatus.CREATED); // 返回保存的评论数据
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<>("Failed to add review", HttpStatus.BAD_REQUEST); // 提供错误信息
-		}
-	}
-//
-//	// 新增評論照片
-//	@PostMapping("/api/vendor_admin/review/add/photo")
-//	public ReviewPhoto addReviewPhoto(@RequestBody ReviewPhoto photo) {
-//		return vendorReviewsService.addReviewPhoto(photo);
-//	}
+        if (review.isPresent()) {
+            vendorReviewsService.deleteReview(reviewId);
+            response.put("message", "刪除成功");
+        } else {
+            response.put("message", "刪除失敗無此資料");
+        }
 
-	// 刪除評論
-	@ResponseBody
-	@DeleteMapping("/api/vendor_admin/review/delete/{reviewId}")
-	public ResponseEntity<?> deleteReview(@PathVariable Integer reviewId) {
-		Optional<VendorReview> review = vendorReviewRepository.findById(reviewId);
-		Map<String, String> response = new HashMap<>();
-		if (review.isPresent()) {
-			boolean deleted = vendorReviewsService.deleteReview(reviewId);
-
-			response.put("message", "刪除成功");
-		} else {
-			response.put("message", "刪除失敗無此資料");
-		}
-
-		return ResponseEntity.ok(response);
-	}
-
+        return ResponseEntity.ok(response);
+    }
 }
