@@ -1,4 +1,4 @@
-package petTopia.service.dashboard.impl;
+package petTopia.service.dashboard;
 
 public interface DashboardService {
     // 獲取總訂單數

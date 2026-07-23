@@ -1,6 +1,6 @@
 package petTopia.service.dashboard.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import petTopia.repository.shop.OrderRepository;
@@ -8,24 +8,16 @@ import petTopia.repository.shop.ProductRepository;
 import petTopia.repository.user.MemberRepository;
 import petTopia.repository.vendor.VendorActivityRepository;
 import petTopia.repository.vendor.VendorRepository;
+import petTopia.service.dashboard.DashboardService;
 
+@RequiredArgsConstructor
 @Service
 public class DashboardServiceImpl implements DashboardService {
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private VendorRepository vendorRepository;
-
-    @Autowired
-    private VendorActivityRepository vendorActivityRepository;
+    private final OrderRepository orderRepository;
+    private final MemberRepository memberRepository;
+    private final ProductRepository productRepository;
+    private final VendorRepository vendorRepository;
+    private final VendorActivityRepository vendorActivityRepository;
 
     @Override
     public long getTotalOrders() {
@@ -56,4 +48,4 @@ public class DashboardServiceImpl implements DashboardService {
     public long getTotalRevenue() {
         return orderRepository.getTotalRevenue();
     }
-} 
+}
