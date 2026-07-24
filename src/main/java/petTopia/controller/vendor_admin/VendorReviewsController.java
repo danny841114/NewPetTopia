@@ -1,10 +1,8 @@
 package petTopia.controller.vendor_admin;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import petTopia.dto.vendor_admin.request.AddReviewRequest;
 import petTopia.model.vendor.ReviewPhoto;
 import petTopia.model.vendor.VendorReview;
 import petTopia.repository.vendor.ReviewPhotoRepository;
@@ -47,82 +46,33 @@ public class VendorReviewsController {
     }
 
     @GetMapping("/review_photos/ids")
-    public ResponseEntity<?> findPhotoIdByVendorReviewId(@RequestParam Integer vendorReviewId) {
-        Optional<VendorReview> op = vendorReviewRepository.findById(vendorReviewId);
-
-        if (op.isPresent()) {
-            VendorReview vendorReviews = op.get();
-            List<Integer> photoIdList = new ArrayList<>();
-            vendorReviews.getReviewPhotos()
-                    .forEach(photo -> photoIdList.add(photo.getId()));
-
-            return ResponseEntity.ok(photoIdList);
-        }
-
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<?> findPhotoIds(@RequestParam Integer vendorReviewId) {
+        List<Integer> photoIds = vendorReviewsService.findPhotoIdsByReviewId(vendorReviewId);
+        return ResponseEntity.ok(photoIds);
     }
 
     @GetMapping("/review_photos/download")
-    public ResponseEntity<?> downloadPhotoById(@RequestParam Integer photoId) {
-        Optional<ReviewPhoto> photoOpt = reviewPhotoRepository.findById(photoId);
+    public ResponseEntity<?> downloadPhoto(@RequestParam Integer photoId) {
+        byte[] photoByteArray = vendorReviewsService.downloadPhotoById(photoId);
 
-        if (photoOpt.isPresent()) {
-            byte[] photoFile = photoOpt.get().getPhoto();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_JPEG);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.IMAGE_JPEG);
-
-            return ResponseEntity.ok().headers(headers).body(photoFile);
-        }
-
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok().headers(headers).body(photoByteArray);
     }
 
+    // TODO: API REQUEST BODY to MODEL ATTRIBUTE
     @PostMapping("/api/vendor_admin/review/add")
-    public ResponseEntity<?> addReview(@RequestBody VendorReview review,
-                                       @RequestPart(value = "photo", required = false) MultipartFile photo) {
-        try {
-            VendorReview vendorReviews = new VendorReview();
-
-            vendorReviews.setVendorId(review.getVendorId());
-            vendorReviews.setMemberId(review.getMemberId());
-            vendorReviews.setReviewContent(review.getReviewContent());
-            vendorReviews.setReviewTime(review.getReviewTime());
-            vendorReviews.setRatingEnvironment(review.getRatingEnvironment());
-            vendorReviews.setRatingPrice(review.getRatingPrice());
-            vendorReviews.setRatingService(review.getRatingService());
-
-            VendorReview savedReview = vendorReviewRepository.save(vendorReviews);
-
-            if (photo != null && !photo.isEmpty()) {
-                ReviewPhoto reviewPhoto = new ReviewPhoto();
-
-                reviewPhoto.setVendorReview(savedReview);
-                reviewPhoto.setPhoto(photo.getBytes()); // 转换为 byte[]
-
-                reviewPhotoRepository.save(reviewPhoto); // 保存图片
-            }
-
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (Exception e) {
-            log.error("Add review failed", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to add review");
-        }
+    public ResponseEntity<?> addReview(@RequestBody AddReviewRequest request,
+                                       @RequestPart(value = "photo", required = false) MultipartFile photo) throws IOException {
+        vendorReviewsService.addReview(request, photo);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    // TODO: API RESPONSE SHOULD CHANGE
     @DeleteMapping("/api/vendor_admin/review/delete/{reviewId}")
     public ResponseEntity<?> deleteReview(@PathVariable Integer reviewId) {
-        Optional<VendorReview> review = vendorReviewRepository.findById(reviewId);
-
-        Map<String, String> response = new HashMap<>();
-
-        if (review.isPresent()) {
-            vendorReviewsService.deleteReview(reviewId);
-            response.put("message", "刪除成功");
-        } else {
-            response.put("message", "刪除失敗無此資料");
-        }
-
-        return ResponseEntity.ok(response);
+        vendorReviewsService.deleteReview(reviewId);
+        return ResponseEntity.ok(Map.of("message", "刪除成功"));
     }
 }
