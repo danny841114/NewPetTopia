@@ -64,7 +64,7 @@ public class Vendor {
     private String contactPerson;
 
     @Column(name = "taxid_number")
-    private String taxidNumber;
+    private String taxIdNumber;
 
     @Column(name = "status", nullable = false)
     private boolean status = false;
@@ -74,10 +74,10 @@ public class Vendor {
     private VendorCategory vendorCategory;
 
     @Column(name = "registration_date", updatable = false)
-    private java.util.Date registrationDate = new Date();
+    private Date registrationDate = new Date();
 
     @Column(name = "updated_date")
-    private java.util.Date updatedDate = new Date();
+    private Date updatedDate = new Date();
 
     @Column(name = "event_count")
     private int eventCount = 0;

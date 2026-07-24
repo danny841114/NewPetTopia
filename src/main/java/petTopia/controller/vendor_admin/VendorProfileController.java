@@ -1,29 +1,21 @@
 package petTopia.controller.vendor_admin;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import petTopia.dto.vendor_admin.request.UpdateVendorRequest;
+import petTopia.dto.vendor_admin.response.UpdateVendorResponse;
+import petTopia.dto.vendor_admin.response.VendorProfile;
 import petTopia.model.vendor.Vendor;
-import petTopia.model.vendor.VendorCategory;
-import petTopia.model.vendor.VendorImages;
-import petTopia.repository.vendor.VendorCategoryRepository;
-import petTopia.repository.vendor.VendorImagesRepository;
-import petTopia.repository.vendor.VendorRepository;
 import petTopia.service.vendor_admin.VendorProfileService;
 import petTopia.service.vendor_admin.VendorServiceAdmin;
 
@@ -34,176 +26,98 @@ public class VendorProfileController {
     private final VendorServiceAdmin vendorService;
     private final VendorProfileService vendorProfileService;
 
-    private final VendorRepository vendorRepository;
-    private final VendorCategoryRepository categoryRepository;
-    private final VendorImagesRepository vendorImagesRepository;
-
+    // TODO:
+    //  CHANGE RESPONSE DATA
     @GetMapping("api/vendor_admin/status/{vendorId}")
-    public ResponseEntity<?> getVendorStatus(@PathVariable Integer vendorId) {
-        Optional<Vendor> statusOptional = vendorService.getVendorStatus(vendorId);
-
-        if (statusOptional.isPresent()) {
-            boolean status = statusOptional.get().isStatus();
-            return ResponseEntity.ok(Map.of("status", status));
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "找不到該店家"));
-        }
+    public ResponseEntity<Map<String, Object>> getVendorStatus(@PathVariable Integer vendorId) {
+        Boolean vendorStatus = vendorService.getVendorStatus(vendorId);
+        return ResponseEntity.ok(Map.of("status", vendorStatus));
     }
 
     // TODO:
     //  CHANGE RESPONSE TO DTO
-    //  CHANGE RESPONSE TYPE
+    //  CHANGE RESPONSE DATA
     @GetMapping("api/vendor_admin/profile/{id}")
-    public ResponseEntity<?> getVendor(@PathVariable Integer id) {
+    public ResponseEntity<Map<String, Object>> getVendor(@PathVariable Integer id) {
         Vendor vendor = vendorProfileService.getVendorById(id);
         return ResponseEntity.ok(Map.of("vendor", vendor));
     }
 
     @GetMapping("api/vendor_admin/profile")
-    public ResponseEntity<Map<String, Object>> getVendorProfile(@RequestParam Integer id) {
-        Optional<Vendor> vendorDetail = vendorRepository.findById(id);
-
-        Map<String, Object> response = new HashMap<>();
-
-        if (vendorDetail.isPresent()) {
-            Vendor vendor = vendorDetail.get();
-            String vendorLogoImgBase64 = vendorService.getVendorLogoBase64(vendor);
-            List<VendorCategory> allCategories = vendorService.getAllVendorCategories();
-            int activityCount = vendorService.getActivityCountByVendor(vendor.getId());
-
-            response.put("vendor", vendor);
-            response.put("allcategory", allCategories);
-            response.put("vendorLogoImgBase64", vendorLogoImgBase64);
-            response.put("activityCount", activityCount);
-
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+    public ResponseEntity<VendorProfile> getVendorProfile(@RequestParam Integer id) {
+        VendorProfile vendorProfile = vendorProfileService.getVendorProfile(id);
+        return ResponseEntity.ok(vendorProfile);
     }
 
+    // TODO:
+    //  CHANGE RESPONSE TO DTO
+    //  CHANGE RESPONSE DATA
     @PostMapping("/api/vendor/update/{vendorId}")
-    public ResponseEntity<Map<String, Object>> updateVendor(@PathVariable Integer vendorId,
-                                                            @RequestParam(required = false) String vendorName,
-                                                            @RequestParam(required = false) String contactEmail,
-                                                            @RequestParam(required = false) String vendorPhone,
-                                                            @RequestParam(required = false) String vendorAddress,
-                                                            @RequestParam(required = false) String vendorDescription,
-                                                            @RequestParam(required = false) String contactPerson,
-                                                            @RequestParam(required = false) String vendorTaxidNumber,
-                                                            @RequestParam(required = false) Integer category,
-                                                            @RequestParam(required = false) MultipartFile vendorLogoImg,
-                                                            @RequestParam(value = "files", required = false) MultipartFile[] files,
-                                                            @RequestParam(value = "deletedImageIds", required = false) List<Integer> deletedImageIds,
-                                                            Model model) throws IOException {
-        Map<String, Object> response = new HashMap<>();
+    public ResponseEntity<UpdateVendorResponse> updateVendor(@PathVariable Integer vendorId,
+                                                             @RequestParam(required = false) String vendorName,
+                                                             @RequestParam(required = false) String contactEmail,
+                                                             @RequestParam(required = false) String vendorPhone,
+                                                             @RequestParam(required = false) String vendorAddress,
+                                                             @RequestParam(required = false) String vendorDescription,
+                                                             @RequestParam(required = false) String contactPerson,
+                                                             @RequestParam(required = false) String vendorTaxidNumber,
+                                                             @RequestParam(required = false) Integer category,
+                                                             @RequestParam(required = false) MultipartFile vendorLogoImg,
+                                                             @RequestParam(value = "files", required = false) MultipartFile[] files,
+                                                             @RequestParam(value = "deletedImageIds", required = false) List<Integer> deletedImageIds) throws IOException {
 
-        Vendor vendor = vendorService.getVendorById(vendorId)
-                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
+        UpdateVendorRequest request = new UpdateVendorRequest();
 
-        if (vendorName != null) vendor.setName(vendorName);
-        if (contactEmail != null) vendor.setContactEmail(contactEmail);
-        if (vendorPhone != null) vendor.setPhone(vendorPhone);
-        if (contactPerson != null) vendor.setContactPerson(contactPerson);
-        if (vendorAddress != null) vendor.setAddress(vendorAddress);
-        if (vendorDescription != null) vendor.setDescription(vendorDescription);
-        if (vendorTaxidNumber != null) vendor.setTaxidNumber(vendorTaxidNumber);
+        request.setVendorName(vendorName);
+        request.setContactEmail(contactEmail);
+        request.setVendorPhone(vendorPhone);
+        request.setVendorAddress(vendorAddress);
+        request.setVendorDescription(vendorDescription);
+        request.setContactPerson(contactPerson);
+        request.setVendorTaxIdNumber(vendorTaxidNumber);
+        request.setCategoryId(category);
+        request.setVendorLogoImg(vendorLogoImg);
+        request.setFiles(files);
+        request.setDeletedImageIds(deletedImageIds);
 
-        if (vendorLogoImg != null && !vendorLogoImg.isEmpty()) {
-            try {
-                vendor.setLogoImg(vendorLogoImg.getBytes());
-            } catch (IOException e) {
-                log.error("Get byte array from vendor logo image failed", e);
-                return ResponseEntity.internalServerError().body(Map.of("error", "Image upload failed"));
-            }
-        }
+        Vendor savedVendor = vendorProfileService.updateVendor(vendorId, request);
 
-        if (category != null) {
-            VendorCategory vendorCategory = categoryRepository.findById(category)
-                    .orElseThrow(() -> new EntityNotFoundException("Category not found"));
-            vendor.setVendorCategory(vendorCategory);
-        }
-
-        Vendor updatedVendor = vendorService.updateVendor(vendor);
-
-        if (deletedImageIds != null && !deletedImageIds.isEmpty()) {
-            vendorImagesRepository.deleteAllById(deletedImageIds);
-        }
-
-        if (files != null && files.length > 0) {
-            List<VendorImages> vendorImagesList = new ArrayList<>();
-            for (MultipartFile file : files) {
-                if (!file.isEmpty()) {
-                    VendorImages vendorImage = new VendorImages();
-
-                    vendorImage.setImage(file.getBytes());
-                    vendorImage.setVendor(vendor);
-
-                    vendorImagesList.add(vendorImage);
-                }
-            }
-
-            vendor.getVendorImages().addAll(vendorImagesList);
-            vendorImagesRepository.saveAll(vendorImagesList);
-        }
-
-        response.put("success", true);
-        response.put("vendor", updatedVendor);
+        UpdateVendorResponse response = UpdateVendorResponse.builder()
+                .success(true)
+                .vendor(savedVendor)
+                .build();
 
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/profileImage/{vendorId}")
     public ResponseEntity<byte[]> getProfileImage(@PathVariable Integer vendorId) {
-        Vendor vendor = vendorService.getVendorById(vendorId)
-                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
-
-        byte[] imageBytes = vendor.getLogoImg();
-        if (imageBytes == null || imageBytes.length == 0) {
-            return ResponseEntity.notFound().build();
-        }
+        byte[] photoByteArray = vendorService.getVendorLogoImgByVendorId(vendorId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "image/jpeg");
 
-        return ResponseEntity.ok().headers(headers).body(imageBytes);
+        return ResponseEntity.ok().headers(headers).body(photoByteArray);
     }
 
     @GetMapping("/profile_photos/download")
-    public ResponseEntity<?> downloadPhotoById(@RequestParam Integer photoId) {
-        Optional<VendorImages> imageOpt = vendorImagesRepository.findById(photoId);
+    public ResponseEntity<byte[]> downloadPhotoById(@RequestParam Integer photoId) {
+        byte[] photoByteArray = vendorProfileService.downloadPhotoById(photoId);
 
-        if (imageOpt.isPresent()) {
-            byte[] imageFile = imageOpt.get().getImage();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_JPEG);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.IMAGE_JPEG);
-
-            return ResponseEntity.ok().headers(headers).body(imageFile);
-        }
-
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok().headers(headers).body(photoByteArray);
     }
 
     @GetMapping("/profile_photos/ids")
-    public ResponseEntity<List<Integer>> findPhotoIdsByVendorId(@RequestParam Integer vendorId) {
-        Optional<Vendor> op = vendorRepository.findById(vendorId);
-
-        if (op.isPresent()) {
-            List<Integer> imageIdList = new ArrayList<>();
-
-            List<VendorImages> images = op.get().getVendorImages();
-            images.forEach(image -> imageIdList.add(image.getId()));
-
-            return ResponseEntity.ok(imageIdList);
-        }
-
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<List<Integer>> findPhotoIds(@RequestParam Integer vendorId) {
+        List<Integer> photoIds = vendorProfileService.findPhotoIdsByVendorId(vendorId);
+        return ResponseEntity.ok(photoIds);
     }
 
     @GetMapping("/api/vendor/{vendorId}/slogans")
-    public ResponseEntity<List<String>> getCertifiedSlogansByVendorId(@PathVariable Integer vendorId) {
+    public ResponseEntity<List<String>> getCertifiedSlogans(@PathVariable Integer vendorId) {
         List<String> slogans = vendorService.getSlogansByVendorId(vendorId);
         return ResponseEntity.ok(slogans);
     }

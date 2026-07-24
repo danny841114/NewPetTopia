@@ -95,13 +95,6 @@ public class VendorActivityReviewService {
         return vendorActivityReviewRepository.save(review);
     }
 
-    /* 藉由ID刪除評論 */
-    @Transactional
-    public void deleteReviewById(Integer reviewId) {
-        vendorActivityReviewRepository.findById(reviewId)
-                .ifPresent(vendorActivityReviewRepository::delete);
-    }
-
     /* 新增文字評論 */
     @Transactional
     public VendorActivityReview addReview(Integer memberId, Integer activityId, String content) {
@@ -151,5 +144,15 @@ public class VendorActivityReviewService {
         dto.setProfilePhoto(member.getProfilePhoto());
 
         return dto;
+    }
+
+    public List<VendorActivityReview> getReviewsByActivityId(Integer activityId) {
+        return vendorActivityReviewRepository.findByVendorActivityId(activityId);
+    }
+
+    @Transactional
+    public void deleteReviewById(Integer reviewId) {
+        vendorActivityReviewRepository.findById(reviewId)
+                .ifPresent(vendorActivityReviewRepository::delete);
     }
 }

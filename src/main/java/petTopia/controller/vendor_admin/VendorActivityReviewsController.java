@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import petTopia.model.vendor.VendorActivityReview;
-import petTopia.service.vendor_admin.VendorActivityReviewService;
+import petTopia.service.vendor.VendorActivityReviewService;
 
 @RequiredArgsConstructor
 @RestController

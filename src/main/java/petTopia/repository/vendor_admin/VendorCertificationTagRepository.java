@@ -23,7 +23,7 @@ public interface VendorCertificationTagRepository extends JpaRepository<VendorCe
             SELECT DISTINCT vct.tag.tagName
             FROM VendorCertificationTag vct
             WHERE vct.vendor.id = :vendorId
-            AND vc.certificationStatus = '已認證'
+            AND vct.certification.certificationStatus = '已認證'
             """)
     List<String> findCertifiedSlogansByVendorId(@Param("vendorId") Integer vendorId);
 

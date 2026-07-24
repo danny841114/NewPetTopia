@@ -15,9 +15,11 @@ import petTopia.dto.vendor.VendorReviewDto;
 import petTopia.model.user.Member;
 import petTopia.model.vendor.ReviewPhoto;
 import petTopia.model.vendor.Vendor;
+import petTopia.model.vendor.VendorActivityReview;
 import petTopia.model.vendor.VendorReview;
 import petTopia.repository.user.MemberRepository;
 import petTopia.repository.vendor.ReviewPhotoRepository;
+import petTopia.repository.vendor.VendorActivityReviewRepository;
 import petTopia.repository.vendor.VendorRepository;
 import petTopia.repository.vendor.VendorReviewRepository;
 
@@ -29,6 +31,8 @@ public class VendorReviewService {
     private final VendorReviewRepository vendorReviewRepository;
     private final ReviewPhotoRepository reviewPhotoRepository;
     private final MemberRepository memberRepository;
+    private final VendorActivityReviewRepository vendorActivityReviewRepository;
+
     private final ReviewPhotoService reviewPhotoService;
 
     /* 尋找單一店家其所有的評分及留言 */
@@ -114,6 +118,7 @@ public class VendorReviewService {
         return savedReview;
     }
 
+    // TODO: Change to request body
     /* 新增星星評分 */
     @Transactional
     public VendorReview addStarReview(Integer memberId, Integer vendorId, Integer ratingEnv, Integer ratingPrice, Integer ratingService) {
