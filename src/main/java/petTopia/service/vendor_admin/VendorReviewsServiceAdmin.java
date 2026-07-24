@@ -23,6 +23,10 @@ public class VendorReviewsServiceAdmin {
     private final VendorReviewRepository vendorReviewRepository;
     private final ReviewPhotoRepository reviewPhotoRepository;
 
+    public List<VendorReview> getAllReviews() {
+        return vendorReviewRepository.findAll();
+    }
+
     public List<VendorReview> getReviewsByVendorId(Integer vendorId) {
         return vendorReviewRepository.findByVendorId(vendorId);
     }

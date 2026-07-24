@@ -24,6 +24,7 @@ import petTopia.model.vendor.VendorImages;
 import petTopia.repository.vendor.VendorCategoryRepository;
 import petTopia.repository.vendor.VendorImagesRepository;
 import petTopia.repository.vendor.VendorRepository;
+import petTopia.service.vendor_admin.VendorProfileService;
 import petTopia.service.vendor_admin.VendorServiceAdmin;
 
 @Slf4j
@@ -31,6 +32,8 @@ import petTopia.service.vendor_admin.VendorServiceAdmin;
 @RestController
 public class VendorProfileController {
     private final VendorServiceAdmin vendorService;
+    private final VendorProfileService vendorProfileService;
+
     private final VendorRepository vendorRepository;
     private final VendorCategoryRepository categoryRepository;
     private final VendorImagesRepository vendorImagesRepository;
@@ -48,9 +51,12 @@ public class VendorProfileController {
         }
     }
 
+    // TODO:
+    //  CHANGE RESPONSE TO DTO
+    //  CHANGE RESPONSE TYPE
     @GetMapping("api/vendor_admin/profile/{id}")
-    public ResponseEntity<?> getVendorById(@PathVariable Integer id) {
-        Optional<Vendor> vendor = vendorRepository.findById(id);
+    public ResponseEntity<?> getVendor(@PathVariable Integer id) {
+        Vendor vendor = vendorProfileService.getVendorById(id);
         return ResponseEntity.ok(Map.of("vendor", vendor));
     }
 

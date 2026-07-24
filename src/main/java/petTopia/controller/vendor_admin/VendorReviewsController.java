@@ -16,8 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 import petTopia.dto.vendor_admin.request.AddReviewRequest;
 import petTopia.model.vendor.ReviewPhoto;
 import petTopia.model.vendor.VendorReview;
-import petTopia.repository.vendor.ReviewPhotoRepository;
-import petTopia.repository.vendor.VendorReviewRepository;
 import petTopia.service.vendor_admin.VendorReviewsServiceAdmin;
 
 @Slf4j
@@ -25,12 +23,10 @@ import petTopia.service.vendor_admin.VendorReviewsServiceAdmin;
 @RestController
 public class VendorReviewsController {
     private final VendorReviewsServiceAdmin vendorReviewsService;
-    private final VendorReviewRepository vendorReviewRepository;
-    private final ReviewPhotoRepository reviewPhotoRepository;
 
     @GetMapping("/api/vendor_admin/reviews/{vendorId}")
     public ResponseEntity<?> getAllReviews() {
-        List<VendorReview> reviews = vendorReviewRepository.findAll();
+        List<VendorReview> reviews = vendorReviewsService.getAllReviews();
         return ResponseEntity.ok(reviews);
     }
 
