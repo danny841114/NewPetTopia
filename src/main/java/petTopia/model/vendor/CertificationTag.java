@@ -10,7 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Table(name = "certification_tag")
@@ -18,7 +17,6 @@ import lombok.ToString;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class CertificationTag {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,5 +27,4 @@ public class CertificationTag {
 	
 	@Column(name = "keywords")
     private String keywords;
-
 }

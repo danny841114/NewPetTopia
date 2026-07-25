@@ -23,27 +23,25 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class VendorCertification {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-	@JsonIgnore
-	@ManyToOne
-	@JoinColumn(name = "vendor_id", nullable = false)
-	private Vendor vendor;
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
 
-	@Column(name = "certification_status", nullable = false, columnDefinition = "NVARCHAR(50) DEFAULT '申請中'")
-	private String certificationStatus;
+    @Column(name = "certification_status", nullable = false, columnDefinition = "NVARCHAR(50) DEFAULT '申請中'")
+    private String certificationStatus;
 
-	@Column(name = "reason", length = 1000)
-	private String reason;
+    @Column(name = "reason", length = 1000)
+    private String reason;
 
-	@Column(name = "request_date", updatable = false)
-	private java.util.Date requestDate = new Date();
+    @Column(name = "request_date", updatable = false)
+    private java.util.Date requestDate = new Date();
 
-	@Column(name = "approved_date")
-	private java.util.Date approvedDate;
-
+    @Column(name = "approved_date")
+    private java.util.Date approvedDate;
 }

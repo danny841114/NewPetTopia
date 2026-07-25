@@ -93,20 +93,14 @@ public class VendorProfileController {
     @GetMapping("/profileImage/{vendorId}")
     public ResponseEntity<byte[]> getProfileImage(@PathVariable Integer vendorId) {
         byte[] photoByteArray = vendorService.getVendorLogoImgByVendorId(vendorId);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "image/jpeg");
-
+        HttpHeaders headers = getHeadersWithContentTypeImageJpg();
         return ResponseEntity.ok().headers(headers).body(photoByteArray);
     }
 
     @GetMapping("/profile_photos/download")
     public ResponseEntity<byte[]> downloadPhotoById(@RequestParam Integer photoId) {
         byte[] photoByteArray = vendorProfileService.downloadPhotoById(photoId);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_JPEG);
-
+        HttpHeaders headers = getHeadersWithContentTypeImageJpg();
         return ResponseEntity.ok().headers(headers).body(photoByteArray);
     }
 
@@ -120,5 +114,11 @@ public class VendorProfileController {
     public ResponseEntity<List<String>> getCertifiedSlogans(@PathVariable Integer vendorId) {
         List<String> slogans = vendorService.getSlogansByVendorId(vendorId);
         return ResponseEntity.ok(slogans);
+    }
+
+    private HttpHeaders getHeadersWithContentTypeImageJpg() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_JPEG);
+        return headers;
     }
 }

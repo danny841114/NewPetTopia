@@ -21,26 +21,24 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class VendorCertificationTag {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-	@JsonIgnore
-	@ManyToOne
-	@JoinColumn(name = "vendor_id", nullable = false)
-	private Vendor vendor;
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
 
-	@ManyToOne
-	@JoinColumn(name = "certification_id", nullable = false)
-	private VendorCertification certification;
+    @ManyToOne
+    @JoinColumn(name = "certification_id", nullable = false)
+    private VendorCertification certification;
 
-	@ManyToOne
-	@JoinColumn(name = "tag_id", nullable = false)
-	private CertificationTag tag;
+    @ManyToOne
+    @JoinColumn(name = "tag_id", nullable = false)
+    private CertificationTag tag;
 
-	@Column(name = "meets_standard", nullable = false)
-	private boolean meetsStandard = false;
-
+    @Column(name = "meets_standard", nullable = false)
+    private boolean meetsStandard = false;
 }
