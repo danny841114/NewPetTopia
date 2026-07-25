@@ -1,12 +1,14 @@
 package petTopia.service.user;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+
 import petTopia.model.user.Member;
 import petTopia.model.user.User;
 import petTopia.repository.user.MemberRepository;
@@ -25,15 +27,15 @@ public class MemberService {
     public Member createOrUpdateMember(Member member) {
         try {
             validateMemberInput(member);
-    
+
             // 確保用戶已存在於 `users` 表
             User user = usersRepository.findById(member.getId())
-                .orElseThrow(() -> new RuntimeException("用戶不存在"));
+                    .orElseThrow(() -> new RuntimeException("用戶不存在"));
             member.setUser(user);  // 關聯 `Users`
-    
+
             // 查詢 `member` 是否已存在
             Optional<Member> existingMemberOpt = memberRepository.findById(member.getId());
-    
+
             Member savedMember;
             if (existingMemberOpt.isPresent()) {
                 // 更新已存在的 `Member`
@@ -44,12 +46,12 @@ public class MemberService {
                 existingMember.setGender(member.getGender());
                 existingMember.setAddress(member.getAddress());
                 existingMember.setUpdatedDate(LocalDateTime.now());
-    
+
                 // 只在 `profilePhoto` 不為空時更新
                 if (member.getProfilePhoto() != null) {
                     existingMember.setProfilePhoto(member.getProfilePhoto());
                 }
-    
+
                 savedMember = memberRepository.save(existingMember);
             } else {
                 // 如果 `member` 不存在，則新增
@@ -57,7 +59,7 @@ public class MemberService {
                 member.setUpdatedDate(LocalDateTime.now());
                 savedMember = memberRepository.save(member);
             }
-            
+
             return savedMember;
         } catch (Exception e) {
             e.printStackTrace();  // 添加錯誤日誌
@@ -101,7 +103,7 @@ public class MemberService {
         if (member.getUser() == null || member.getUser().getId() == null) {
             throw new IllegalArgumentException("用戶關聯不能為空");
         }
-        
+
         // 確保ID匹配
         if (!member.getId().equals(member.getUser().getId())) {
             throw new IllegalArgumentException("用戶ID不匹配");
@@ -118,8 +120,9 @@ public class MemberService {
         return false;
     }
 
-    public Optional<Member> findById(int userId) {
-        return memberRepository.findById(userId);  // 根據 userId 查找 Member 資料
+    public Member findById(int userId) {
+        return memberRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
     }
 
     public List<Member> findAllById(List<Integer> memberIds) {
