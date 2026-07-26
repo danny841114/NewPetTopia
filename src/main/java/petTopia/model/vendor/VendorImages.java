@@ -1,6 +1,5 @@
 package petTopia.model.vendor;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,21 +23,21 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VendorImages {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-        @Column(name = "id")
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
 
-	@JsonIgnore
-	@ManyToOne
-	@JoinColumn(name = "vendor_id", nullable = false)
-	private Vendor vendor;
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
 
-	@Lob
-	@Column(name = "image", nullable = false)
-	private byte[] image;
+    @Lob
+    @Column(name = "image", nullable = false)
+    private byte[] image;
 
-	/* 使用Transient防止被序列化，用於Service層賦值 */
-	@Transient
-	private String imageBase64;
+    /* 使用Transient防止被序列化，用於Service層賦值 */
+    @Transient
+    private String imageBase64;
 }

@@ -65,6 +65,13 @@ public class VendorService {
         return null;
     }
 
+    // TODO: Change to JPQL method
+    public byte[] findVendorLogoImgById(Integer vendorId) {
+        return vendorRepository.findById(vendorId)
+                .map(Vendor::getLogoImg)
+                .orElseThrow(() -> new EntityNotFoundException("Vendor logo image not found"));
+    }
+
     /* 排除特定店家之清單 */
     // TODO: JPQL
     public List<Vendor> findAllVendorExceptOne(Integer vendorId) {

@@ -29,6 +29,12 @@ public class VendorController {
         return ResponseEntity.ok(vendor);
     }
 
+    @GetMapping(path = "/{vendorId}/logImg", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getVendorImage(@PathVariable Integer vendorId) {
+        byte[] logoImg = vendorService.findVendorLogoImgById(vendorId);
+        return ResponseEntity.ok(logoImg);
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<Vendor>> getAllVendors() {
         List<Vendor> vendorList = vendorService.findAllVendor();
