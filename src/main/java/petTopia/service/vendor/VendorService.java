@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
-import petTopia.dto.vendor.ActivityDto;
+import petTopia.dto.vendor.ActivityDetail;
 import petTopia.dto.vendor.VendorDto;
 import petTopia.model.vendor.Vendor;
 import petTopia.model.vendor.VendorActivity;
@@ -106,7 +106,7 @@ public class VendorService {
 
         String logoImgUrl = LOGO_IMG_URL_PREFIX.replace("{vendor}", String.valueOf(vendor.getId()));
 
-        List<ActivityDto> activityDtoList = vendor.getActivities()
+        List<ActivityDetail> activityDtoList = vendor.getActivities()
                 .stream()
                 .map(this::convertActivityToDto)
                 .collect(Collectors.toList());
@@ -121,8 +121,8 @@ public class VendorService {
                 .build();
     }
 
-    private ActivityDto convertActivityToDto(VendorActivity activity) {
-        return ActivityDto.builder()
+    private ActivityDetail convertActivityToDto(VendorActivity activity) {
+        return ActivityDetail.builder()
                 .activityId(activity.getId())
                 .activityName(activity.getName())
                 .activityDescription(activity.getDescription())

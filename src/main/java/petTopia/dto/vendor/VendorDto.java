@@ -32,7 +32,7 @@ public class VendorDto {
     private Float avgRatingEnvironment = 0.0f;
     private Float avgRatingPrice = 0.0f;
     private Float avgRatingService = 0.0f;
-    private List<ActivityDto> activityDtoList;
+    private List<ActivityDetail> activityDtoList;
 
     private Integer categoryId;
     private String categoryName;

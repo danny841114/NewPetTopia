@@ -14,8 +14,7 @@ import petTopia.util.ImageConverter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class VendorReviewDto {
-    
+public class VendorDetail {
     /* 評價資訊 */
 	private Integer reviewId;
 	private Integer vendorId;

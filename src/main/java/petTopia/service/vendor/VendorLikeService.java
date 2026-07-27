@@ -30,7 +30,7 @@ public class VendorLikeService {
         return vendorLike.isPresent();
     }
 
-    public boolean toggleVendorLike(Integer memberId, Integer vendorId) {
+    public Boolean toggleVendorLike(Integer memberId, Integer vendorId) {
         VendorLike vendorLike = vendorLikeRepository.findByMemberIdAndVendorId(memberId, vendorId)
                 .orElse(null);
 

@@ -11,15 +11,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import petTopia.dto.vendor.VendorReviewDto;
+import petTopia.dto.vendor.VendorDetail;
+import petTopia.dto.vendor.request.AddReviewRequest;
+import petTopia.dto.vendor.request.AddReviewStarRequest;
+import petTopia.dto.vendor.request.ModifyReviewRequest;
 import petTopia.model.user.Member;
 import petTopia.model.vendor.ReviewPhoto;
 import petTopia.model.vendor.Vendor;
-import petTopia.model.vendor.VendorActivityReview;
 import petTopia.model.vendor.VendorReview;
 import petTopia.repository.user.MemberRepository;
 import petTopia.repository.vendor.ReviewPhotoRepository;
-import petTopia.repository.vendor.VendorActivityReviewRepository;
 import petTopia.repository.vendor.VendorRepository;
 import petTopia.repository.vendor.VendorReviewRepository;
 
@@ -31,9 +32,6 @@ public class VendorReviewService {
     private final VendorReviewRepository vendorReviewRepository;
     private final ReviewPhotoRepository reviewPhotoRepository;
     private final MemberRepository memberRepository;
-    private final VendorActivityReviewRepository vendorActivityReviewRepository;
-
-    private final ReviewPhotoService reviewPhotoService;
 
     /* 尋找單一店家其所有的評分及留言 */
     public List<VendorReview> findReviewsByVendorId(Integer vendorId) {
@@ -64,7 +62,7 @@ public class VendorReviewService {
     }
 
     /* 查詢某個vendorId所有評價之DTO */
-    public List<VendorReviewDto> findReviewListByVendorId(Integer vendorId) {
+    public List<VendorDetail> findReviewListByVendorId(Integer vendorId) {
         return vendorReviewRepository.findByVendorId(vendorId)
                 .stream()
                 .map(this::fromEntity)
@@ -118,10 +116,11 @@ public class VendorReviewService {
         return savedReview;
     }
 
-    // TODO: Change to request body
     /* 新增星星評分 */
     @Transactional
-    public VendorReview addStarReview(Integer memberId, Integer vendorId, Integer ratingEnv, Integer ratingPrice, Integer ratingService) {
+    public VendorReview addStarReview(Integer vendorId, AddReviewStarRequest request) {
+        Integer memberId = request.getMemberId();
+
         VendorReview vendorReview = vendorReviewRepository.findFirstByMemberIdAndVendorId(memberId, vendorId)
                 .orElse(null);
 
@@ -130,16 +129,16 @@ public class VendorReviewService {
 
             newVendorReview.setMemberId(memberId);
             newVendorReview.setVendorId(vendorId);
-            newVendorReview.setRatingEnvironment(ratingEnv);
-            newVendorReview.setRatingPrice(ratingPrice);
-            newVendorReview.setRatingService(ratingService);
+            newVendorReview.setRatingEnvironment(request.getRatingEnv());
+            newVendorReview.setRatingPrice(request.getRatingPrice());
+            newVendorReview.setRatingService(request.getRatingService());
             newVendorReview.setReviewTime(new Date());
 
             return vendorReviewRepository.save(newVendorReview);
         } else {
-            vendorReview.setRatingEnvironment(ratingEnv);
-            vendorReview.setRatingPrice(ratingPrice);
-            vendorReview.setRatingService(ratingService);
+            vendorReview.setRatingEnvironment(request.getRatingEnv());
+            vendorReview.setRatingPrice(request.getRatingPrice());
+            vendorReview.setRatingService(request.getRatingService());
             vendorReview.setReviewTime(new Date());
 
             return vendorReviewRepository.save(vendorReview);
@@ -209,7 +208,7 @@ public class VendorReviewService {
     }
 
     /* 查詢某個member所有評價之DTO */
-    public List<VendorReviewDto> findReviewListByMemberId(Integer memberId) {
+    public List<VendorDetail> findReviewListByMemberId(Integer memberId) {
         return vendorReviewRepository.findByMemberId(memberId)
                 .stream()
                 .map(this::fromEntity)
@@ -218,52 +217,40 @@ public class VendorReviewService {
 
     /* 新增評論(完整版) */
     @Transactional
-    public VendorReview addNewReview(Integer memberId,
-                                     Integer vendorId,
-                                     String content,
-                                     Integer ratingEnv,
-                                     Integer ratingPrice,
-                                     Integer ratingService,
-                                     List<MultipartFile> reviewPhotos) throws IOException {
+    public VendorReview addNewReview(Integer vendorId, AddReviewRequest request) throws IOException {
         VendorReview review = new VendorReview();
 
-        review.setMemberId(memberId);
+        review.setMemberId(request.getMemberId());
         review.setVendorId(vendorId);
-        review.setReviewContent(content);
-        review.setRatingEnvironment(ratingEnv);
-        review.setRatingPrice(ratingPrice);
-        review.setRatingService(ratingService);
+        review.setReviewContent(request.getContent());
+        review.setRatingEnvironment(request.getRatingEnv());
+        review.setRatingPrice(request.getRatingPrice());
+        review.setRatingService(request.getRatingService());
         review.setReviewTime(new Date());
 
         VendorReview savedReview = vendorReviewRepository.save(review);
 
-        addReviewPhotos(savedReview, reviewPhotos);
+        addReviewPhotos(savedReview, request.getReviewPhotos());
 
         return savedReview;
     }
 
     /* 修改評論(完整版) */
     @Transactional
-    public VendorReview modifyReview(Integer reviewId,
-                                     String content,
-                                     Integer ratingEnv,
-                                     Integer ratingPrice,
-                                     Integer ratingService,
-                                     List<MultipartFile> reviewPhotos,
-                                     List<Integer> deletePhotoIds) throws IOException {
+    public VendorReview modifyReview(Integer reviewId, ModifyReviewRequest request) throws IOException {
         VendorReview review = findReviewById(reviewId);
 
-        review.setReviewContent(content);
-        review.setRatingEnvironment(ratingEnv);
-        review.setRatingPrice(ratingPrice);
-        review.setRatingPrice(ratingPrice);
-        review.setRatingService(ratingService);
+        review.setReviewContent(request.getContent());
+        review.setRatingEnvironment(request.getRatingEnv());
+        review.setRatingPrice(request.getRatingPrice());
+        review.setRatingService(request.getRatingService());
         review.setReviewTime(new Date());
 
         VendorReview savedReview = vendorReviewRepository.save(review);
 
-        addReviewPhotos(review, reviewPhotos);
+        addReviewPhotos(review, request.getReviewPhotos());
 
+        List<Integer> deletePhotoIds = request.getDeletePhotoIds();
         if (deletePhotoIds != null && !deletePhotoIds.isEmpty()) {
             for (Integer photoId : deletePhotoIds) {
                 reviewPhotoRepository.deleteById(photoId);
@@ -274,16 +261,14 @@ public class VendorReviewService {
     }
 
     /* 將Member和VendorReview轉換成DTO */
-    public VendorReviewDto fromEntity(VendorReview review) {
+    private VendorDetail fromEntity(VendorReview review) {
         Member member = memberRepository.findById(review.getMemberId())
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
         Vendor vendor = vendorRepository.findById(review.getVendorId())
                 .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
 
-        List<ReviewPhoto> reviewPhotoList = reviewPhotoService.findPhotoListByReviewId(review.getId());
-
-        VendorReviewDto dto = new VendorReviewDto();
+        VendorDetail dto = new VendorDetail();
 
         // 設定評價資訊
         dto.setReviewId(review.getId());
@@ -294,9 +279,6 @@ public class VendorReviewService {
         dto.setRatingEnvironment(review.getRatingEnvironment());
         dto.setRatingPrice(review.getRatingPrice());
         dto.setRatingService(review.getRatingService());
-
-        // 設定Base64後再寫入
-        dto.setReviewPhotos(reviewPhotoList);
 
         // 判斷 ReviewPhoto 是否為空，以控制按鈕
         List<ReviewPhoto> reviewPhotos = review.getReviewPhotos();
@@ -311,10 +293,10 @@ public class VendorReviewService {
         return dto;
     }
 
-
     /* 上傳多張圖片 */
-    @Transactional
     private void addReviewPhotos(VendorReview review, List<MultipartFile> reviewPhotos) throws IOException {
+        if (reviewPhotos == null || reviewPhotos.isEmpty()) return;
+
         for (MultipartFile photo : reviewPhotos) {
             ReviewPhoto reviewPhoto = new ReviewPhoto();
 

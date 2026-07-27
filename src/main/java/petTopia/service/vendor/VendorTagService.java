@@ -1,6 +1,5 @@
 package petTopia.service.vendor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;

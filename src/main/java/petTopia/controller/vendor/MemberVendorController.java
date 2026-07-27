@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import petTopia.dto.vendor.VendorLikeDto;
-import petTopia.dto.vendor.VendorReviewDto;
+import petTopia.dto.vendor.VendorDetail;
 import petTopia.service.vendor.VendorLikeService;
 import petTopia.service.vendor.VendorReviewService;
 
@@ -25,8 +25,8 @@ public class MemberVendorController {
     }
 
     @GetMapping("/member/{memberId}/review")
-    public ResponseEntity<List<VendorReviewDto>> getReviewList(@PathVariable Integer memberId) {
-        List<VendorReviewDto> likeList = vendorReviewService.findReviewListByMemberId(memberId);
+    public ResponseEntity<List<VendorDetail>> getReviewList(@PathVariable Integer memberId) {
+        List<VendorDetail> likeList = vendorReviewService.findReviewListByMemberId(memberId);
         return ResponseEntity.ok(likeList);
     }
 
