@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.util.Base64;
 import java.util.List;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -19,13 +18,17 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import petTopia.dto.vendor.FriendlyShopDto;
+import petTopia.dto.vendor.request.AddFriendlyShopRequest;
+import petTopia.dto.vendor.request.ModifyFriendlyShopRequest;
 import petTopia.model.vendor.FriendlyShop;
 import petTopia.model.vendor.Vendor;
 import petTopia.model.vendor.VendorCategory;
 import petTopia.repository.vendor.FriendlyShopRepository;
 import petTopia.repository.vendor.VendorCategoryRepository;
 import petTopia.repository.vendor.VendorRepository;
-import petTopia.util.ImageConverter;
+
+import static petTopia.dto.vendor.FriendlyShopDto.fromEntity;
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -94,50 +97,23 @@ public class FriendlyShopService {
     }
 
     @Transactional
-    public FriendlyShop findFirstByVendorId(Integer vendorId) {
+    public FriendlyShopDto findFirstByVendorId(Integer vendorId) {
         Vendor vendor = vendorRepository.findById(vendorId)
                 .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
 
         FriendlyShop friendlyShop = friendlyShopRepository.findFirstByVendor(vendor).orElse(null);
 
         if (friendlyShop == null) {
-            FriendlyShop newFriendlyShop = new FriendlyShop();
+            AddFriendlyShopRequest request = AddFriendlyShopRequest.builder()
+                    .name(vendor.getName())
+                    .address(vendor.getAddress())
+                    .categoryId(vendor.getVendorCategory().getId())
+                    .build();
 
-            if (vendor.getName() != null) {
-                newFriendlyShop.setName(vendor.getName());
-            } else {
-                newFriendlyShop.setName("( 無店家名稱 )");
-            }
-
-            newFriendlyShop.setVendor(vendor);
-            newFriendlyShop.setVendorCategory(vendor.getVendorCategory());
-            newFriendlyShop.setAddress(vendor.getAddress());
-
-            BigDecimal[] latLng = getLatLng(vendor.getAddress());
-            if (latLng != null && latLng.length == 2) {
-                newFriendlyShop.setLatitude(latLng[0]);
-                newFriendlyShop.setLongitude(latLng[1]);
-            }
-
-            FriendlyShop savedFriendlyShop = friendlyShopRepository.save(newFriendlyShop);
-
-            // TODO: change base64 to byte[]
-            byte[] logoImg = vendor.getLogoImg();
-            if (logoImg != null) {
-                String mimeType = ImageConverter.getMimeType(logoImg);
-                String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-                vendor.setLogoImgBase64(base64);
-            }
-
-            return savedFriendlyShop;
+            return addFriendlyShop(request);
         }
 
-        if (vendor.getName() != null) {
-            friendlyShop.setName(vendor.getName());
-        } else {
-            friendlyShop.setName("( 無店家名稱 )");
-        }
-
+        friendlyShop.setName(vendor.getName());
         friendlyShop.setVendorCategory(vendor.getVendorCategory());
         friendlyShop.setAddress(vendor.getAddress());
 
@@ -149,139 +125,99 @@ public class FriendlyShopService {
 
         FriendlyShop savedFriendlyShop = friendlyShopRepository.save(friendlyShop);
 
-        // TODO: change base64 to byte[]
-        byte[] logoImg = vendor.getLogoImg();
-        if (logoImg != null) {
-            String mimeType = ImageConverter.getMimeType(logoImg);
-            String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-            vendor.setLogoImgBase64(base64);
-        }
-
-        return savedFriendlyShop;
+        return fromEntity(savedFriendlyShop);
     }
 
-    public List<FriendlyShop> findAll() {
-        List<FriendlyShop> friendlyShopList = friendlyShopRepository.findAll();
-
-        // TODO: change base64 to byte[]
-        for (FriendlyShop friendlyShop : friendlyShopList) {
-            if (friendlyShop.getVendor() != null) {
-                byte[] logoImg = friendlyShop.getVendor().getLogoImg();
-                if (logoImg != null) {
-                    String mimeType = ImageConverter.getMimeType(logoImg);
-                    String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-                    friendlyShop.getVendor().setLogoImgBase64(base64);
-                }
-            }
-        }
-
-        return friendlyShopList;
+    public List<FriendlyShopDto> findAll() {
+        return friendlyShopRepository.findAll()
+                .stream()
+                .map(FriendlyShopDto::fromEntity)
+                .toList();
     }
 
-    public List<FriendlyShop> findByKeyword(String keyword) {
-        List<FriendlyShop> friendlyShopList = friendlyShopRepository.findByNameContaining(keyword);
-
-        // TODO: change base64 to byte[]
-        for (FriendlyShop friendlyShop : friendlyShopList) {
-            if (friendlyShop.getVendor() != null) {
-                byte[] logoImg = friendlyShop.getVendor().getLogoImg();
-                if (logoImg != null) {
-                    String mimeType = ImageConverter.getMimeType(logoImg);
-                    String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-                    friendlyShop.getVendor().setLogoImgBase64(base64);
-                }
-            }
-        }
-
-        return friendlyShopList;
+    public List<FriendlyShopDto> findByKeyword(String keyword) {
+        return friendlyShopRepository.findByNameContaining(keyword)
+                .stream()
+                .map(FriendlyShopDto::fromEntity)
+                .toList();
     }
 
-    public List<FriendlyShop> findByVendorId(Integer vendorId) {
+    public List<FriendlyShopDto> findByVendorId(Integer vendorId) {
         Vendor vendor = vendorRepository.findById(vendorId)
                 .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
 
-        List<FriendlyShop> friendlyShopList = friendlyShopRepository.findByVendor(vendor);
-
-        // TODO: change base64 to byte[]
-        for (FriendlyShop friendlyShop : friendlyShopList) {
-            if (friendlyShop.getVendor() != null) {
-                byte[] logoImg = friendlyShop.getVendor().getLogoImg();
-                if (logoImg != null) {
-                    String mimeType = ImageConverter.getMimeType(logoImg);
-                    String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-                    friendlyShop.getVendor().setLogoImgBase64(base64);
-                }
-            }
-        }
-
-        return friendlyShopList;
+        return friendlyShopRepository.findByVendor(vendor)
+                .stream()
+                .map(FriendlyShopDto::fromEntity)
+                .toList();
     }
 
-    public List<FriendlyShop> findByCategoryId(Integer categoryId) {
-        VendorCategory category = vendorCategoryRepository.findById(categoryId).orElse(null);
-        List<FriendlyShop> friendlyShopList = friendlyShopRepository.findByVendorCategory(category);
+    public List<FriendlyShopDto> findByCategoryId(Integer categoryId) {
+        VendorCategory category = vendorCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new EntityNotFoundException("Vendor category not found"));
 
-        // TODO: change base64 to byte[]
-        for (FriendlyShop friendlyShop : friendlyShopList) {
-            if (friendlyShop.getVendor() != null) {
-                byte[] logoImg = friendlyShop.getVendor().getLogoImg();
-                if (logoImg != null) {
-                    String mimeType = ImageConverter.getMimeType(logoImg);
-                    String base64 = "data:%s;base64,".formatted(mimeType) + Base64.getEncoder().encodeToString(logoImg);
-                    friendlyShop.getVendor().setLogoImgBase64(base64);
-                }
-            }
-        }
-        return friendlyShopList;
+        return friendlyShopRepository.findByVendorCategory(category)
+                .stream()
+                .map(FriendlyShopDto::fromEntity)
+                .toList();
     }
 
     /* 新增友善店家 */
     @Transactional
-    public FriendlyShop addFriendlyShop(String name, Integer categoryId, String address) {
-        VendorCategory category = vendorCategoryRepository.findById(categoryId)
+    public FriendlyShopDto addFriendlyShop(AddFriendlyShopRequest request) {
+        VendorCategory category = vendorCategoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Vendor category not found"));
 
-        BigDecimal[] latLng = getLatLng(address);
-
         FriendlyShop friendlyShop = new FriendlyShop();
-        friendlyShop.setName(name);
+        friendlyShop.setName(request.getName());
+        friendlyShop.setAddress(request.getAddress());
         friendlyShop.setVendorCategory(category);
-        friendlyShop.setAddress(address);
-        friendlyShop.setLatitude(latLng[0]);
-        friendlyShop.setLongitude(latLng[1]);
 
-        return friendlyShopRepository.save(friendlyShop);
+        BigDecimal[] latLng = getLatLng(request.getAddress());
+        if (latLng != null && latLng.length == 2) {
+            friendlyShop.setLatitude(latLng[0]);
+            friendlyShop.setLongitude(latLng[1]);
+        }
+
+        FriendlyShop savedFriendlyShop = friendlyShopRepository.save(friendlyShop);
+
+        return FriendlyShopDto.fromEntity(savedFriendlyShop);
     }
 
     /* 修改友善店家 */
     @Transactional
-    public FriendlyShop modifyFriendlyShop(Integer id, String name, Integer categoryId, String address) {
+    public FriendlyShopDto modifyFriendlyShop(Integer id, ModifyFriendlyShopRequest request) {
         FriendlyShop friendlyShop = friendlyShopRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Friendly shop not found"));
 
-        VendorCategory category = vendorCategoryRepository.findById(categoryId)
+        VendorCategory category = vendorCategoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Vendor category not found"));
 
-        BigDecimal[] latLng = getLatLng(address);
-
-        friendlyShop.setName(name);
+        friendlyShop.setName(request.getName());
+        friendlyShop.setAddress(request.getAddress());
         friendlyShop.setVendorCategory(category);
-        friendlyShop.setAddress(address);
-        friendlyShop.setLatitude(latLng[0]);
-        friendlyShop.setLongitude(latLng[1]);
 
-        return friendlyShopRepository.save(friendlyShop);
+        BigDecimal[] latLng = getLatLng(request.getAddress());
+        if (latLng != null && latLng.length == 2) {
+            friendlyShop.setLatitude(latLng[0]);
+            friendlyShop.setLongitude(latLng[1]);
+        }
+
+        FriendlyShop savedFriendlyShop = friendlyShopRepository.save(friendlyShop);
+
+        return FriendlyShopDto.fromEntity(savedFriendlyShop);
     }
 
     /* 刪除友善店家 */
     @Transactional
-    public void deleteFriendlyShop(Integer id) {
+    public void deleteById(Integer id) {
         friendlyShopRepository.findById(id).ifPresent(friendlyShopRepository::delete);
     }
 
     /* 獲取友善店家 */
-    public FriendlyShop getFriendlyShop(Integer id) {
+    public FriendlyShopDto getById(Integer id) {
         return friendlyShopRepository.findById(id)
+                .map(FriendlyShopDto::fromEntity)
                 .orElseThrow(() -> new EntityNotFoundException("Friendly shop not found"));
 
     }

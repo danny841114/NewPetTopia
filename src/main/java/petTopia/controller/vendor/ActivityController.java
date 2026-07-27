@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import petTopia.dto.vendor.ActivityImageDto;
 import petTopia.model.vendor.ActivityType;
 import petTopia.model.vendor.VendorActivity;
 import petTopia.model.vendor.VendorActivityImages;
@@ -41,9 +43,9 @@ public class ActivityController {
     }
 
     @GetMapping("/{activityId}/image")
-    public ResponseEntity<List<VendorActivityImages>> getActivityImages(@PathVariable Integer activityId) {
-        List<VendorActivityImages> imageList = vendorActivityImagesService.findImageListByActivityId(activityId);
-        return ResponseEntity.ok(imageList);
+    public ResponseEntity<List<ActivityImageDto>> getActivityImages(@PathVariable Integer activityId) {
+        List<ActivityImageDto> images = vendorActivityImagesService.findImagesByActivityId(activityId);
+        return ResponseEntity.ok(images);
     }
 
     @GetMapping("/type/{typeId}")
@@ -82,5 +84,11 @@ public class ActivityController {
     public ResponseEntity<List<VendorActivity>> getActivitiesByVendorId(@PathVariable Integer vendorId) {
         List<VendorActivity> activityList = vendorActivityService.findActivityListByVendorId(vendorId);
         return ResponseEntity.ok(activityList);
+    }
+
+    @GetMapping(path = "/img/{id}", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getActivityImage(@PathVariable Integer id) {
+        byte[] imageByteArray = vendorActivityImagesService.findById(id);
+        return ResponseEntity.ok(imageByteArray);
     }
 }

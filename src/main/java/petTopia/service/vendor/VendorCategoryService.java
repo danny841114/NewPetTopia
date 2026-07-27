@@ -17,14 +17,14 @@ import petTopia.repository.vendor.VendorCategoryRepository;
 public class VendorCategoryService {
     private final VendorCategoryRepository vendorCategoryRepository;
 
-    public List<VendorCategory> findAllVendorCategoriesWithVendors() {
-        return this.findAllVendorCategories()
+    public List<VendorCategory> findAllCategoriesWithVendors() {
+        return this.findAll()
                 .stream()
                 .filter(c -> !c.getVendors().isEmpty())
                 .collect(Collectors.toList());
     }
 
-    public List<VendorCategory> findAllVendorCategories() {
+    public List<VendorCategory> findAll() {
         Sort sort = Sort.by(Sort.Direction.ASC, "id");
         return vendorCategoryRepository.findAll(sort);
     }
