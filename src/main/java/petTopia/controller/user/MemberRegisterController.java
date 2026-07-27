@@ -1,6 +1,6 @@
 package petTopia.controller.user;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -8,31 +8,26 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
-import petTopia.model.user.User;       
+import petTopia.model.user.User;
 import petTopia.service.user.EmailService;
 import petTopia.service.user.RegistrationService;
 
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
 public class MemberRegisterController {
-    
     private static final Logger logger = LoggerFactory.getLogger(MemberRegisterController.class);
 
-    @Autowired
-    private RegistrationService registrationService;
-
-    @Autowired
-    private EmailService emailService;
-
-
+    private final RegistrationService registrationService;
+    private final EmailService emailService;
 
     private Map<String, Map<String, Object>> verificationCodes = new HashMap<>();
 
@@ -41,23 +36,23 @@ public class MemberRegisterController {
         String email = request.get("email");
         String password = request.get("password");
         String confirmPassword = request.get("confirmPassword");
-        
+
         logger.info("處理會員註冊請求 - 電子郵件: {}", email);
-        
+
         // 基本驗證
         if (email == null || email.trim().isEmpty()) {
             return ResponseEntity.badRequest()
-                .body(Map.of("error", "電子郵件不能為空"));
+                    .body(Map.of("error", "電子郵件不能為空"));
         }
-        
+
         if (password == null || password.trim().isEmpty()) {
             return ResponseEntity.badRequest()
-                .body(Map.of("error", "密碼不能為空"));
+                    .body(Map.of("error", "密碼不能為空"));
         }
-        
+
         if (!password.equals(confirmPassword)) {
             return ResponseEntity.badRequest()
-                .body(Map.of("error", "密碼與確認密碼不符"));
+                    .body(Map.of("error", "密碼與確認密碼不符"));
         }
 
         try {
@@ -66,7 +61,7 @@ public class MemberRegisterController {
             if (existingUser != null) {
                 logger.warn("註冊失敗 - 電子郵件已存在: {}", email);
                 return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "此 email 已註冊為會員"));
+                        .body(Map.of("error", "此 email 已註冊為會員"));
             }
 
             // 創建用戶基本信息
@@ -82,32 +77,32 @@ public class MemberRegisterController {
             if ((Boolean) result.get("success")) {
                 logger.info("會員註冊成功 - 電子郵件: {}", email);
                 return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(Map.of(
-                        "message", "註冊成功，請查收驗證郵件後登入",
-                        "email", email
-                    ));
+                        .body(Map.of(
+                                "message", "註冊成功，請查收驗證郵件後登入",
+                                "email", email
+                        ));
             } else {
                 logger.warn("註冊失敗 - {}", result.get("message"));
                 return ResponseEntity.badRequest()
-                    .body(Map.of("error", result.get("message")));
+                        .body(Map.of("error", result.get("message")));
             }
 
         } catch (Exception e) {
             logger.error("註冊過程發生異常 - 電子郵件: {}", email, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "註冊失敗：" + e.getMessage()));
+                    .body(Map.of("error", "註冊失敗：" + e.getMessage()));
         }
     }
 
     @PostMapping("/send-verification")
     public ResponseEntity<?> sendVerificationCode(@RequestBody Map<String, String> request) {
         String email = request.get("email");
-        
+
         if (email == null || email.trim().isEmpty()) {
             return ResponseEntity.badRequest()
-                .body(Map.of("error", "電子郵件不能為空"));
+                    .body(Map.of("error", "電子郵件不能為空"));
         }
-        
+
         logger.info("發送驗證碼 - 電子郵件: {}", email);
 
         try {
@@ -125,13 +120,13 @@ public class MemberRegisterController {
 
             logger.info("驗證碼發送成功 - 電子郵件: {}", email);
             return ResponseEntity.ok(Map.of(
-                "message", "驗證碼已發送",
-                "email", email
+                    "message", "驗證碼已發送",
+                    "email", email
             ));
         } catch (Exception e) {
             logger.error("驗證碼發送失敗 - 電子郵件: {}", email, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "驗證碼發送失敗：" + e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "驗證碼發送失敗：" + e.getMessage()));
         }
     }
 
@@ -139,12 +134,12 @@ public class MemberRegisterController {
     public ResponseEntity<?> verifyCode(@RequestBody Map<String, String> request) {
         String email = request.get("email");
         String code = request.get("code");
-        
+
         if (email == null || code == null) {
             return ResponseEntity.badRequest()
-                .body(Map.of("error", "電子郵件和驗證碼不能為空"));
+                    .body(Map.of("error", "電子郵件和驗證碼不能為空"));
         }
-        
+
         logger.info("驗證驗證碼 - 電子郵件: {}", email);
 
         // 第一步：檢查內存中是否有驗證碼
@@ -173,15 +168,15 @@ public class MemberRegisterController {
                     logger.warn("內存驗證成功但更新數據庫失敗 - 電子郵件: {}", email, e);
                     // 即使數據庫更新失敗，仍然可以繼續，因為內存驗證已成功
                 }
-                
+
                 // 清除內存中的驗證碼
                 verificationCodes.remove(email);
-                
+
                 logger.info("驗證成功(內存驗證碼) - 電子郵件: {}", email);
                 return ResponseEntity.ok(Map.of(
-                    "message", "驗證成功",
-                    "email", email,
-                    "verified", true
+                        "message", "驗證成功",
+                        "email", email,
+                        "verified", true
                 ));
             }
         }
@@ -190,23 +185,23 @@ public class MemberRegisterController {
         try {
             logger.info("嘗試從數據庫驗證 - 電子郵件: {}, 驗證碼: {}", email, code);
             boolean verified = registrationService.verifyEmail(code);
-            
+
             if (verified) {
                 logger.info("驗證成功(數據庫驗證碼) - 電子郵件: {}", email);
                 return ResponseEntity.ok(Map.of(
-                    "message", "驗證成功",
-                    "email", email,
-                    "verified", true
+                        "message", "驗證成功",
+                        "email", email,
+                        "verified", true
                 ));
             } else {
                 logger.warn("驗證失敗(數據庫驗證碼) - 電子郵件: {}", email);
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "驗證碼錯誤或已過期"));
+                        .body(Map.of("error", "驗證碼錯誤或已過期"));
             }
         } catch (Exception e) {
             logger.error("驗證過程發生數據庫錯誤 - 電子郵件: {}", email, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "驗證過程發生錯誤: " + e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "驗證過程發生錯誤: " + e.getMessage()));
         }
     }
 }
