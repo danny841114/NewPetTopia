@@ -39,27 +39,27 @@ public class VendorReviewService {
     }
 
     /* 新增或修改文字評論 */
-    @Transactional
-    public void addOrModifyVendorTextReview(Integer memberId, Integer vendorId, String content) {
-        VendorReview vendorReview = vendorReviewRepository.findFirstByMemberIdAndVendorId(memberId, vendorId)
-                .orElse(null);
-
-        if (vendorReview == null) {
-            VendorReview newVendorReview = new VendorReview();
-
-            newVendorReview.setMemberId(memberId);
-            newVendorReview.setVendorId(vendorId);
-            newVendorReview.setReviewContent(content);
-            newVendorReview.setReviewTime(new Date());
-
-            vendorReviewRepository.save(newVendorReview);
-        } else {
-            vendorReview.setReviewContent(content);
-            vendorReview.setReviewTime(new Date());
-
-            vendorReviewRepository.save(vendorReview);
-        }
-    }
+//    @Transactional
+//    public void addOrModifyVendorTextReview(Integer memberId, Integer vendorId, String content) {
+//        VendorReview vendorReview = vendorReviewRepository.findFirstByMemberIdAndVendorId(memberId, vendorId)
+//                .orElse(null);
+//
+//        if (vendorReview == null) {
+//            VendorReview newVendorReview = new VendorReview();
+//
+//            newVendorReview.setMemberId(memberId);
+//            newVendorReview.setVendorId(vendorId);
+//            newVendorReview.setReviewContent(content);
+//            newVendorReview.setReviewTime(new Date());
+//
+//            vendorReviewRepository.save(newVendorReview);
+//        } else {
+//            vendorReview.setReviewContent(content);
+//            vendorReview.setReviewTime(new Date());
+//
+//            vendorReviewRepository.save(vendorReview);
+//        }
+//    }
 
     /* 查詢某個vendorId所有評價之DTO */
     public List<VendorDetail> findReviewListByVendorId(Integer vendorId) {

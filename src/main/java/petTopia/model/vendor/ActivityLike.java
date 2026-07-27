@@ -19,20 +19,19 @@ import petTopia.model.user.Member;
 @Setter
 @NoArgsConstructor
 public class ActivityLike {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private Integer id;
-
-	@ManyToOne
-	@JoinColumn(name = "member_id", nullable = false)
-	private Member member;
+    @ManyToOne
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
 //	@Column(name = "member_id")
 //	private Integer memberId;
 
-	@ManyToOne
-	@JoinColumn(name = "vendor_activity_id", nullable = false)
-	private VendorActivity vendorActivity;
+    @ManyToOne
+    @JoinColumn(name = "vendor_activity_id", nullable = false)
+    private VendorActivity vendorActivity;
 }

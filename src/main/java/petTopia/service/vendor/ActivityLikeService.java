@@ -60,7 +60,7 @@ public class ActivityLikeService {
         List<ActivityLike> likeList = activityLikeRepository.findByVendorActivity(activity);
 
         return likeList.stream()
-                .map(this::fromEntity)
+                .map(ActivityLikeDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
@@ -71,29 +71,12 @@ public class ActivityLikeService {
     }
 
     @Transactional
-    public boolean deleteByLikeId(Integer likeId) {
+    public Boolean deleteByLikeId(Integer likeId) {
         if (activityLikeRepository.existsById(likeId)) {
             activityLikeRepository.deleteById(likeId);
             return true;
         }
 
         return false;
-    }
-
-    private ActivityLikeDto fromEntity(ActivityLike like) {
-        Integer likeMemberId = like.getMember().getId();
-        Member member = memberRepository.findById(likeMemberId)
-                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
-
-        ActivityLikeDto dto = new ActivityLikeDto();
-        dto.setId(like.getId());
-        dto.setVendorId(like.getVendorActivity().getVendor().getId());
-        dto.setActivityId(like.getVendorActivity().getId());
-        dto.setMemberId(member.getId());
-        dto.setName(member.getName());
-        dto.setGender(member.getGender());
-        dto.setProfilePhoto(member.getProfilePhoto());
-
-        return dto;
     }
 }

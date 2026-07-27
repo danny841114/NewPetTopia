@@ -31,5 +31,5 @@ public class ActivityType {
 
     @JsonIgnore
     @OneToMany(mappedBy = "activityType", cascade = CascadeType.ALL)
-    private List<VendorActivity> VendorActivities;
+    private List<VendorActivity> vendorActivities;
 }

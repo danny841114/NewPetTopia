@@ -29,7 +29,7 @@ public class ActivityRegistrationUserService {
     private final ActivityPeopleNumberRepository activityPeopleNumberRepository;
 
     @Transactional
-    public boolean toggleRegistration(Integer memberId, Integer activityId) {
+    public Boolean toggleRegistration(Integer memberId, Integer activityId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
@@ -63,7 +63,7 @@ public class ActivityRegistrationUserService {
         }
     }
 
-    public boolean getRegistrationStatus(Integer memberId, Integer activityId) {
+    public Boolean getRegistrationStatus(Integer memberId, Integer activityId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
@@ -75,7 +75,7 @@ public class ActivityRegistrationUserService {
         return registrationOptional.isPresent();
     }
 
-    // should not return base64 string
+    // TODO: Should not return base64 string
     public List<ActivityRegistration> getActivityPendingList(Integer activityId) {
         String status = "pending";
         List<ActivityRegistration> pendingList = activityRegistrationRepository.findByVendorActivityIdAndStatus(activityId, status);
@@ -92,7 +92,7 @@ public class ActivityRegistrationUserService {
         return pendingList;
     }
 
-    // should not return base64 string
+    // TODO: Should not return base64 string
     public List<ActivityRegistration> getActivityConfirmedList(Integer activityId) {
         String status = "confirmed";
         List<ActivityRegistration> confirmedList = activityRegistrationRepository.findByVendorActivityIdAndStatus(activityId, status);
@@ -121,7 +121,7 @@ public class ActivityRegistrationUserService {
         return peopleNumber;
     }
 
-    public boolean isActivityAvailable(Integer activityId) {
+    public Boolean isActivityAvailable(Integer activityId) {
         ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findById(activityId)
                 .orElseThrow(() -> new EntityNotFoundException("Activity people number not found"));
 
@@ -140,7 +140,7 @@ public class ActivityRegistrationUserService {
     }
 
     @Transactional
-    public boolean deleteByRegistrationId(Integer likeId) {
+    public Boolean deleteByRegistrationId(Integer likeId) {
         if (activityRegistrationRepository.existsById(likeId)) {
             activityRegistrationRepository.deleteById(likeId);
             return true;

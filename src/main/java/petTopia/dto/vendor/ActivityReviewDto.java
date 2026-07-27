@@ -1,38 +1,62 @@
 package petTopia.dto.vendor;
 
-import java.util.Base64;
-import java.util.Date;
+import lombok.*;
+import petTopia.model.vendor.VendorActivityReview;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import petTopia.util.ImageConverter;
+import java.util.Date;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class ActivityReviewDto {
-    /* 評價資訊 */
-	private Integer reviewId;
-    private Integer vendorId;
-    private Integer vendorActivityId;
+    private Integer id;
+    private Integer memberId;
     private Date reviewTime;
     private String reviewContent;
-	
-    /* 會員資訊 */
-    private Integer memberId;
-    private String name;
-    private boolean gender;
-    private byte[] profilePhoto;
-    private String profilePhotoBase64;
-    
-    /* 設定圖片之Base64 */
-    public void setProfilePhoto(byte[] profilePhoto) {
-    	if(profilePhoto!=null) {    		
-    		String mimeType = ImageConverter.getMimeType(profilePhoto);
-    		this.profilePhotoBase64 = "data:%s;base64,".formatted(mimeType)
-    				+ Base64.getEncoder().encodeToString(profilePhoto);
-    	}
-		this.profilePhoto = profilePhoto;
+    private VendorDetail vendor;
+    private ActivityDetail activity;
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VendorDetail {
+        private Integer id;
+        private String name;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ActivityDetail {
+        private Integer id;
+        private String name;
+    }
+
+    public static ActivityReviewDto fromEntity(VendorActivityReview review) {
+        VendorDetail vendorDetail = VendorDetail.builder()
+                .id(review.getVendor().getId())
+                .name(review.getVendor().getName())
+                .build();
+
+        ActivityDetail activityDetail = ActivityDetail.builder()
+                .id(review.getVendorActivity().getId())
+                .name(review.getVendorActivity().getName())
+                .build();
+
+        return ActivityReviewDto.builder()
+                .id(review.getId())
+                .memberId(review.getMemberId())
+                .reviewContent(review.getReviewContent())
+                .reviewTime(review.getReviewTime())
+                .reviewContent(review.getReviewContent())
+                .vendor(vendorDetail)
+                .activity(activityDetail)
+                .build();
     }
 }

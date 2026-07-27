@@ -4,11 +4,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import petTopia.dto.vendor.ActivityReviewDetail;
 import petTopia.dto.vendor.ActivityReviewDto;
+import petTopia.dto.vendor.request.AddActivityReviewRequest;
 import petTopia.model.vendor.VendorActivityReview;
 import petTopia.service.vendor.VendorActivityReviewService;
 
@@ -19,22 +22,26 @@ public class ActivityReviewController {
     private final VendorActivityReviewService vendorActivityReviewService;
 
     @GetMapping("/{activityId}/review")
-    public ResponseEntity<List<ActivityReviewDto>> getActivityReview(@PathVariable Integer activityId) {
-        List<ActivityReviewDto> reviewList = vendorActivityReviewService.findReviewListByActivityId(activityId);
+    public ResponseEntity<List<ActivityReviewDetail>> getActivityReview(@PathVariable Integer activityId) {
+        List<ActivityReviewDetail> reviewList = vendorActivityReviewService.findReviewListByActivityId(activityId);
         return ResponseEntity.ok(reviewList);
     }
 
+    // TODO: Modify response body
     @GetMapping("/review/{reviewId}")
     public ResponseEntity<?> getActivityReviewById(@PathVariable Integer reviewId) {
-        VendorActivityReview review = vendorActivityReviewService.findReviewById(reviewId);
+        ActivityReviewDto review = vendorActivityReviewService.findReviewById(reviewId);
         return ResponseEntity.ok(Map.of("review", review));
     }
 
+    // TODO:
+    //  Modify request / response body
+    //  activityId -> request body
+    //  memberId -> credential
     @PostMapping("/{activityId}/review/add")
-    public ResponseEntity<?> addReview(@PathVariable Integer activityId, @RequestBody Map<String, String> data) {
-        Integer memberId = Integer.parseInt(data.get("memberId"));
-        String content = data.get("content");
-        VendorActivityReview review = vendorActivityReviewService.addReview(memberId, activityId, content);
+    public ResponseEntity<?> addReview(@PathVariable Integer activityId,
+                                       @Valid @RequestBody AddActivityReviewRequest request) {
+        ActivityReviewDto review = vendorActivityReviewService.addReview(activityId, request);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -43,10 +50,11 @@ public class ActivityReviewController {
         return ResponseEntity.ok(response);
     }
 
+    // TODO: Modify response body
     @PutMapping("/review/{reviewId}/rewrite")
-    public ResponseEntity<?> rewriteReview(@PathVariable Integer reviewId, @RequestBody Map<String, String> data) {
+    public ResponseEntity<?> modifyReview(@PathVariable Integer reviewId, @RequestBody Map<String, String> data) {
         String content = data.get("content");
-        VendorActivityReview review = vendorActivityReviewService.rewriteReviewById(reviewId, content);
+        ActivityReviewDto review = vendorActivityReviewService.modifyReviewById(reviewId, content);
         return ResponseEntity.ok(Map.of("review", review));
     }
 

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import petTopia.model.vendor.VendorActivityReview;
+import petTopia.dto.vendor.ActivityReviewDto;
 import petTopia.service.vendor.VendorActivityReviewService;
 
 @RequiredArgsConstructor
@@ -17,9 +17,9 @@ public class VendorActivityReviewsController {
     private final VendorActivityReviewService vendorActivityReviewService;
 
     @GetMapping("/activityreviews")
-    public ResponseEntity<?> getReviews(@RequestParam Integer vendorActivityId) {
-        List<VendorActivityReview> vendorActivityReviews = vendorActivityReviewService.getReviewsByActivityId(vendorActivityId);
-        return ResponseEntity.ok(vendorActivityReviews);
+    public ResponseEntity<List<ActivityReviewDto>> getReviews(@RequestParam Integer vendorActivityId) {
+        List<ActivityReviewDto> reviews = vendorActivityReviewService.getReviewsByActivityId(vendorActivityId);
+        return ResponseEntity.ok(reviews);
     }
 
     @DeleteMapping("/activityreviews/delete/{reviewId}")

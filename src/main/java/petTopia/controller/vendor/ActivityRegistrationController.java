@@ -37,20 +37,20 @@ public class ActivityRegistrationController {
 
 	@GetMapping("/{activityId}/member/{memberId}/register/status")
 	public ResponseEntity<?> getRegistrationCondition(@PathVariable Integer activityId, @PathVariable Integer memberId) {
-		boolean isRegistered = activityRegistrationUserService.getRegistrationStatus(memberId, activityId);
+		Boolean isRegistered = activityRegistrationUserService.getRegistrationStatus(memberId, activityId);
 		return ResponseEntity.ok(Map.of("action", isRegistered));
 	}
 	
 	@PostMapping("/{activityId}/register")
 	public ResponseEntity<?> registerActivity(@PathVariable Integer activityId, @RequestBody Map<String, Integer> data) {
 		Integer memberId = data.get("memberId");
-		boolean isRegistered = activityRegistrationUserService.toggleRegistration(memberId, activityId);
+		Boolean isRegistered = activityRegistrationUserService.toggleRegistration(memberId, activityId);
 		return ResponseEntity.ok(Map.of("action", isRegistered));
 	}
 	
 	@GetMapping("/{activityId}/registration/status")
 	public ResponseEntity<Boolean> isActivityAvailable(@PathVariable Integer activityId) {
-		boolean isAvailable = activityRegistrationUserService.isActivityAvailable(activityId);
+		Boolean isAvailable = activityRegistrationUserService.isActivityAvailable(activityId);
 		return ResponseEntity.ok(isAvailable);
 	}
 }

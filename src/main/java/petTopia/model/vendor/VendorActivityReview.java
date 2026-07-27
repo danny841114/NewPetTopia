@@ -28,32 +28,30 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VendorActivityReview {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private Integer id;
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
 
-	@JsonIgnore
-	@ManyToOne
-	@JoinColumn(name = "vendor_id", nullable = false)
-	private Vendor vendor;
-
-	@Column(name = "member_id")
-	private Integer memberId;
+    @Column(name = "member_id")
+    private Integer memberId;
 
 //    @ManyToOne
 //    @JoinColumn(name = "member_id", nullable = false)
 //    private MemberBean member;
 
-	@Column(name = "review_time", nullable = false)
-	private java.util.Date reviewTime;
+    @Column(name = "review_time", nullable = false)
+    private Date reviewTime;
 
-	@Column(name = "review_content", nullable = false, length = 255)
-	private String reviewContent;
+    @Column(name = "review_content", nullable = false, length = 255)
+    private String reviewContent;
 
-	@ManyToOne
-	@JoinColumn(name = "vendor_activity_id", nullable = false)
-	private VendorActivity vendorActivity;
-
+    @ManyToOne
+    @JoinColumn(name = "vendor_activity_id", nullable = false)
+    private VendorActivity vendorActivity;
 }

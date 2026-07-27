@@ -23,22 +23,21 @@ import petTopia.model.user.Member;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ActivityRegistration {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+    @ManyToOne
+    @JoinColumn(name = "vendor_activity_id", nullable = false)
+    private VendorActivity vendorActivity;
 
-	@ManyToOne
-	@JoinColumn(name = "vendor_activity_id", nullable = false)
-	private VendorActivity vendorActivity;
+    @ManyToOne
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
-	@ManyToOne
-	@JoinColumn(name = "member_id", nullable = false)
-	private Member member;
+    @Column(name = "registration_time", nullable = false, updatable = false)
+    private Date registrationTime = new Date();
 
-	@Column(name = "registration_time", nullable = false, updatable = false)
-	private java.util.Date registrationTime = new Date();
-
-	@Column(name = "status", nullable = false)
-	private String status = "pending";
+    @Column(name = "status", nullable = false)
+    private String status = "pending";
 }

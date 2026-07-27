@@ -1,6 +1,5 @@
 package petTopia.service.vendor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -12,8 +11,6 @@ import petTopia.dto.vendor.VendorImageDto;
 import petTopia.model.vendor.VendorImages;
 import petTopia.repository.vendor.VendorImagesRepository;
 
-import static petTopia.constant.ImageUrl.VENDOR_IMG_URL_PREFIX;
-
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
@@ -21,22 +18,10 @@ public class VendorImagesService {
     private final VendorImagesRepository vendorImagesRepository;
 
     public List<VendorImageDto> findImageListByVendorId(Integer vendorId) {
-        List<VendorImages> images = vendorImagesRepository.findByVendorId(vendorId);
-
-        List<VendorImageDto> dtos = new ArrayList<>();
-
-        for (VendorImages image : images) {
-            String imgUrl = VENDOR_IMG_URL_PREFIX.replace("{id}", String.valueOf(image.getId()));
-
-            VendorImageDto dto = VendorImageDto.builder()
-                    .id(image.getId())
-                    .imgUrl(imgUrl)
-                    .build();
-
-            dtos.add(dto);
-        }
-
-        return dtos;
+        return vendorImagesRepository.findByVendorId(vendorId)
+                .stream()
+                .map(VendorImageDto::fromEntity)
+                .toList();
     }
 
     public byte[] getVendorImageById(Integer imageId) {

@@ -58,6 +58,7 @@ public class VendorActivityService {
                 .toList();
     }
 
+    // TODO: add JPQL
     public List<ActivityDto> findActivityByTypeIdExceptOne(Integer typeId, Integer activityId) {
         ActivityType type = activityTypeRepository.findById(typeId)
                 .orElseThrow(() -> new EntityNotFoundException("Activity type not found"));
