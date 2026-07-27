@@ -40,7 +40,7 @@ public class ActivityLikeDto {
     public static ActivityLikeDto fromEntity(ActivityLike like) {
         if (like == null || like.getVendorActivity() == null || like.getMember() == null) return null;
 
-        String imgUrl = LOGO_IMG_URL_PREFIX.replace("{id}", String.valueOf(like.getMember().getId()));
+        String imgUrl = LOGO_IMG_URL_PREFIX.replace("{vendorId}", String.valueOf(like.getMember().getId()));
 
         return ActivityLikeDto.builder()
                 .id(like.getId())

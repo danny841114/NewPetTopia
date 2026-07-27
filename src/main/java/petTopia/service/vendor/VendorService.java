@@ -104,7 +104,7 @@ public class VendorService {
     private VendorDto convertVendorToDto(Vendor vendor) {
         Float currentAvgRating = vendorReviewService.setAverageRating(vendor.getId()).getTotalRating();
 
-        String logoImgUrl = LOGO_IMG_URL_PREFIX.replace("{vendor}", String.valueOf(vendor.getId()));
+        String logoImgUrl = LOGO_IMG_URL_PREFIX.replace("{vendorId}", String.valueOf(vendor.getId()));
 
         List<ActivityDetail> activityDtoList = vendor.getActivities()
                 .stream()

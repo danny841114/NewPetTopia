@@ -24,8 +24,9 @@ public class FriendlyShopDto {
 
 
     public static FriendlyShopDto fromEntity(FriendlyShop shop) {
-        Integer vendorId = shop.getVendor().getId();
-        String imgUrl = LOGO_IMG_URL_PREFIX.replace("{vendor}", String.valueOf(vendorId));
+        if (shop.getVendor() == null) return null;
+
+        String imgUrl = LOGO_IMG_URL_PREFIX.replace("{vendorId}", String.valueOf(shop.getVendor().getId()));
 
         return FriendlyShopDto.builder()
                 .id(shop.getId())

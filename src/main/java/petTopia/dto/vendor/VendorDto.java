@@ -39,7 +39,7 @@ public class VendorDto {
     private String logoImgUrl;
 
     public static VendorDto fromEntity(Vendor vendor) {
-        String imgUrl = LOGO_IMG_URL_PREFIX.replace("{vendor}", String.valueOf(vendor.getId()));
+        String imgUrl = LOGO_IMG_URL_PREFIX.replace("{vendorId}", String.valueOf(vendor.getId()));
 
         return VendorDto.builder()
                 .id(vendor.getId())
