@@ -61,7 +61,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 if (localUsers.size() > 1) logger.warn("發現多個本地會員帳號使用相同的郵箱: {}", email);
 
                 // 檢查是否有對應的商家帳號
-                Optional<User> vendorAccount = usersRepository.findVendorByEmail(email);
+                Optional<User> vendorAccount = usersRepository.findByEmailIgnoreCaseAndUserRole(email, User.UserRole.VENDOR);
 
                 Map<String, Object> attributes = new HashMap<>(oauth2User.getAttributes());
 
@@ -96,7 +96,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 logger.info("對應的會員信息 - Member: {}", member);
 
                 // 檢查是否有對應的商家帳號
-                Optional<User> vendorAccount = usersRepository.findVendorByEmail(email);
+                Optional<User> vendorAccount = usersRepository.findByEmailIgnoreCaseAndUserRole(email, User.UserRole.VENDOR);
 
                 // 建立包含額外資訊的屬性Map
                 Map<String, Object> attributes = new HashMap<>();

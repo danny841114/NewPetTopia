@@ -3,6 +3,7 @@ package petTopia.service.user;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 
 import lombok.RequiredArgsConstructor;
@@ -93,10 +94,13 @@ public class RegistrationService {
 
     @Transactional
     public boolean verifyEmail(String code) {
-        User user = usersRepository.findByVerificationToken(code);
+        Optional<User> userOptional = usersRepository.findByVerificationToken(code);
 
-        if (user != null && !user.isEmailVerified() && LocalDateTime.now().isBefore(user.getTokenExpiry())) {
+        if (userOptional.isPresent()
+                && !userOptional.get().isEmailVerified()
+                && LocalDateTime.now().isBefore(userOptional.get().getTokenExpiry())) {
             // 更新用戶驗證狀態
+            User user = userOptional.get();
             user.setEmailVerified(true);
             user.setVerificationToken(null);
             user.setTokenExpiry(null);

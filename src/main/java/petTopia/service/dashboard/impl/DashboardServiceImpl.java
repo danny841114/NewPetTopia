@@ -26,7 +26,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public long getTotalMembers() {
-        return memberRepository.countTotalMembers();
+        return memberRepository.count();
     }
 
     @Override

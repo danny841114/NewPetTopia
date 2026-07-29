@@ -1,10 +1,7 @@
 package petTopia.service.user;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Date;
+import java.util.*;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -100,11 +97,14 @@ public class VendorRegistrationService {
     // TODO: Change repository response type
     @Transactional
     public boolean verifyEmail(String token) {
-        User user = usersRepository.findByVerificationToken(token);
+        Optional<User> userOptional = usersRepository.findByVerificationToken(token);
 
-        if (user != null && !user.isEmailVerified() && LocalDateTime.now().isBefore(user.getTokenExpiry())) {
+        if (userOptional.isPresent()
+                && !userOptional.get().isEmailVerified()
+                && LocalDateTime.now().isBefore(userOptional.get().getTokenExpiry())) {
             try {
                 // 更新用戶驗證狀態
+                User user = userOptional.get();
                 user.setEmailVerified(true);
                 user.setVerificationToken(null);
                 user.setTokenExpiry(null);
