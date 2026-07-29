@@ -23,17 +23,35 @@ public class VendorDto {
     private String contactPerson;
     private String taxIdNumber;
     private Boolean status;
-    private Date registrationDate = new Date();
-    private Date updatedDate = new Date();
-    private Integer eventCount = 0;
-    private Float totalRating = 0.0f;
-    private Integer reviewCount = 0;
-    private String vendorLevel = "普通";
-    private Float avgRatingEnvironment = 0.0f;
-    private Float avgRatingPrice = 0.0f;
-    private Float avgRatingService = 0.0f;
-    private List<ActivityDetail> activityDtoList;
 
+    @Builder.Default
+    private Date registrationDate = new Date();
+
+    @Builder.Default
+    private Date updatedDate = new Date();
+
+    @Builder.Default
+    private Integer eventCount = 0;
+
+    @Builder.Default
+    private Float totalRating = 0.0f;
+
+    @Builder.Default
+    private Integer reviewCount = 0;
+
+    @Builder.Default
+    private String vendorLevel = "普通";
+
+    @Builder.Default
+    private Float avgRatingEnvironment = 0.0f;
+
+    @Builder.Default
+    private Float avgRatingPrice = 0.0f;
+
+    @Builder.Default
+    private Float avgRatingService = 0.0f;
+
+    private List<ActivityDetail> activityDtoList;
     private Integer categoryId;
     private String categoryName;
     private String logoImgUrl;
