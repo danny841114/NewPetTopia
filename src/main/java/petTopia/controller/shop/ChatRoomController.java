@@ -17,7 +17,6 @@ import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -28,8 +27,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import petTopia.dto.shop.ChatMessagesDto;
+import petTopia.dto.shop.request.MessageRequest;
 import petTopia.model.shop.ChatMessages;
 import petTopia.model.user.Member;
 import petTopia.service.shop.ChatMessagesService;
@@ -47,27 +46,32 @@ public class ChatRoomController {
     private final MemberService memberService;
 
     private final String PATH = "src/main/resources/static";
+    private final String PATH_CHATROOM_PHOTO = "src/main/resources/static/chatRoomPhoto";
 
     @MessageMapping("/send")  // 客戶端發送至 `/app/send`
-    public ResponseEntity<?> sendMessage(@Payload Map<String, Object> message) {
+    public ResponseEntity<?> sendMessage(@Payload MessageRequest message) {
         ChatMessagesDto chatMessagesDto = new ChatMessagesDto();
 
-        Integer senderId = (Integer) message.get("senderId");
-        Integer receiverId = (Integer) message.get("receiverId");
-        String content = (String) message.get("content");
-        String sendTime = (String) message.get("sendTime");
+        Integer senderId = message.getSenderId();
+        Integer receiverId = message.getReceiverId();
+        String content = message.getContent();
+
+        String sendTime = message.getSendTime();
         Instant instant = Instant.parse(sendTime);
         Date parsedDate = Date.from(instant);
-        List<String> urlPhotos = (List<String>) message.get("photos"); // 圖片url列表
+
+        List<String> urlPhotos = message.getPhotos();
         List<byte[]> bytePhotos = new ArrayList<>();
 
         // 儲存訊息
         ChatMessages saveMessage = chatMessagesService.saveMessage(senderId, receiverId, content, parsedDate);
         Integer saveMessageId = saveMessage.getId();
+
         // 儲存圖片
         if (urlPhotos != null && !urlPhotos.isEmpty()) {
             for (String photo : urlPhotos) {
                 chatPhotoService.savePhoto(saveMessage, photo);
+
                 // 本地位置轉byte[]丟回前端
                 try {
                     byte[] bytePhoto = convertUrlToByteArray(PATH + photo);
@@ -96,7 +100,7 @@ public class ChatRoomController {
             chatMessagesDto = null;
         }
 
-        return new ResponseEntity<>(chatMessagesDto, HttpStatus.OK);
+        return ResponseEntity.ok(chatMessagesDto);
     }
 
     // 後台聊天室 => 獲取所有聊天用戶
@@ -121,7 +125,7 @@ public class ChatRoomController {
         } else
             responseBody.put("chatUsers", null);
 
-        return new ResponseEntity<>(responseBody, HttpStatus.OK);
+        return ResponseEntity.ok(responseBody);
     }
 
     // 前台&後台聊天室 => 獲取歷史訊息
@@ -168,7 +172,7 @@ public class ChatRoomController {
             responseBody.put("chatMessagesHistory", null);
         }
 
-        return new ResponseEntity<>(responseBody, HttpStatus.OK);
+        return ResponseEntity.ok(responseBody);
     }
 
     // 上傳圖片
@@ -180,7 +184,7 @@ public class ChatRoomController {
             List<Map<String, String>> uploadedImages = new ArrayList<>();
 
             // 檢查資料夾是否存在
-            Path uploadDir = Paths.get("src/main/resources/static/chatRoomPhoto");
+            Path uploadDir = Paths.get(PATH_CHATROOM_PHOTO);
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
             }
@@ -207,7 +211,7 @@ public class ChatRoomController {
 
             return ResponseEntity.ok(uploadedImages);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.internalServerError().build();
         }
     }
 

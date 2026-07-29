@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import petTopia.dto.shop.PaymentResponseDto;
+import petTopia.dto.shop.request.ProcessCheckout;
+import petTopia.dto.shop.response.CheckoutInfo;
 import petTopia.model.shop.Cart;
 import petTopia.model.shop.Coupon;
 import petTopia.model.shop.Order;
@@ -48,21 +50,23 @@ public class CheckOutController {
     private final MemberService memberService;
 
     @GetMapping("/checkout")
-    public ResponseEntity<Object> getCheckoutInfo(@RequestParam List<Integer> productIds, @RequestParam Integer memberId) {
+    public ResponseEntity<CheckoutInfo> getCheckoutInfo(@RequestParam List<Integer> productIds, @RequestParam Integer memberId) {
         List<Cart> cartItems = cartService.getCartByMemberIdAndProductIds(memberId, productIds);
         BigDecimal subtotal = cartService.calculateTotalPrice(memberId, productIds);
         List<ShippingCategory> shippingCategories = shippingCategoryRepo.findAll();
         List<PaymentCategory> paymentCategories = paymentCategoryRepo.findAll();
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("cartItems", cartItems.isEmpty() ? Collections.emptyList() : cartItems);
-        response.put("subtotal", subtotal);
-        response.put("shippingCategories", shippingCategories);
-        response.put("paymentCategories", paymentCategories);
+        CheckoutInfo checkoutInfo = CheckoutInfo.builder()
+                .cartItems(cartItems)
+                .subtotal(subtotal)
+                .shippingCategories(shippingCategories)
+                .paymentCategories(paymentCategories)
+                .build();
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(checkoutInfo);
     }
 
+    // TODO: Use @PathVariable
     @GetMapping("/member")
     public ResponseEntity<Object> getMemberInfo(@RequestParam Integer memberId) {
         Member member = memberService.findById(memberId);
@@ -77,6 +81,7 @@ public class CheckOutController {
         if (lastShippingAddress == null) {
             lastShippingAddress = new ShippingAddress();  // 避免前端渲染錯誤
         }
+
         return ResponseEntity.ok(lastShippingAddress);
     }
 
@@ -101,28 +106,28 @@ public class CheckOutController {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<?> processCheckout(@RequestBody Map<String, Object> checkoutData, @RequestParam Integer memberId) {
+    public ResponseEntity<?> processCheckout(@RequestBody ProcessCheckout checkoutData, @RequestParam Integer memberId) {
         Member member = memberService.findById(memberId);
 
         // 從 checkoutData 取得各種資料
         try {
             // 從 checkoutData 取得各種資料
-            Integer couponId = checkoutData.get("couponId") != null ? (Integer) checkoutData.get("couponId") : null;
-            Integer shippingCategoryId = (Integer) checkoutData.get("shippingCategoryId");
-            Integer paymentCategoryId = (Integer) checkoutData.get("paymentCategoryId");
+            Integer couponId = checkoutData.getCouponId();
+            Integer shippingCategoryId = checkoutData.getShippingCategoryId();
+            Integer paymentCategoryId = checkoutData.getPaymentCategoryId();
 
             // 取得購物車內的商品 ID 清單
-            List<Integer> productIdList = ((List<Map<String, Object>>) checkoutData.get("cartItems"))
+            List<Integer> productIdList = checkoutData.getCartItems()
                     .stream()
-                    .map(item -> (Integer) item.get("productId"))
+                    .map(ProcessCheckout.CartItem::getProductId)
                     .collect(Collectors.toList());
 
             // 收件人資訊
-            String receiverName = (String) checkoutData.get("receiverName");
-            String receiverPhone = (String) checkoutData.get("receiverPhone");
-            String street = (String) checkoutData.get("street");
-            String city = (String) checkoutData.get("city");
-            String amount = (String) checkoutData.get("paymentAmount");
+            String receiverName = checkoutData.getReceiverName();
+            String receiverPhone = checkoutData.getReceiverPhone();
+            String street = checkoutData.getStreet();
+            String city = checkoutData.getCity();
+            String amount = checkoutData.getPaymentAmount();
 
             BigDecimal paymentAmount = (amount != null) ? new BigDecimal(amount) : null;
 
@@ -137,6 +142,7 @@ public class CheckOutController {
             // 信用卡付款
             if (paymentCategoryId == 1) {
                 PaymentResponseDto paymentResponse = paymentService.processCreditCardPayment(order, paymentCategoryId);
+
                 if (paymentResponse != null) {
                     return ResponseEntity.ok(Map.of(
                             "message", "訂單建立成功，請前往付款",
