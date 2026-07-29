@@ -1,13 +1,10 @@
 package petTopia.controller.user;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
-
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
 import petTopia.dto.user.request.Oauth2LoginRequest;
 import petTopia.dto.user.response.Oauth2LoginResponse;
 import petTopia.model.user.User;
@@ -15,44 +12,25 @@ import petTopia.jwt.JwtUtil;
 import petTopia.model.user.Member;
 import petTopia.service.user.MemberLoginService;
 import petTopia.service.user.MemberService;
-
 import petTopia.repository.user.UserRepository;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDateTime;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/oauth2")
 public class OAuth2LoginController {
     private static final Logger logger = LoggerFactory.getLogger(OAuth2LoginController.class);
 
-
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private MemberLoginService memberLoginService;
-
-    @Autowired
-    private MemberService memberService;
-
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private UserRepository usersRepository;
-
-
-    // 添加默認的空構造函數
-    public OAuth2LoginController() {
-        logger.info("創建 OAuth2LoginController 實例");
-    }
+    private final JwtUtil jwtUtil;
+    private final MemberLoginService memberLoginService;
+    private final MemberService memberService;
+    private final PasswordEncoder passwordEncoder;
+    private final UserRepository usersRepository;
 
     /**
      * 檢查名稱是否為郵箱格式
