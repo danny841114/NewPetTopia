@@ -37,10 +37,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer>, Prod
 	
 	public ProductDetail findByProductDetailId(Integer productDetailId);
 	
-	// 統計總商品數
-	@Query("SELECT COUNT(p) FROM Product p")
-	public long countTotalProducts();
-	
     // 查詢庫存小於 50 的商品數量
     @Query("SELECT COUNT(p) FROM Product p WHERE p.stockQuantity < 50")
     long countLowStockProducts();

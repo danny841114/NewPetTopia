@@ -3,6 +3,8 @@ package petTopia.service.dashboard.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
+import petTopia.dto.admin.DashboardStats;
 import petTopia.repository.shop.OrderRepository;
 import petTopia.repository.shop.ProductRepository;
 import petTopia.repository.user.MemberRepository;
@@ -10,6 +12,7 @@ import petTopia.repository.vendor.VendorActivityRepository;
 import petTopia.repository.vendor.VendorRepository;
 import petTopia.service.dashboard.DashboardService;
 
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class DashboardServiceImpl implements DashboardService {
@@ -21,7 +24,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public long getTotalOrders() {
-        return orderRepository.countTotalOrders();
+        return orderRepository.count();
     }
 
     @Override
@@ -31,21 +34,33 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public long getTotalProducts() {
-        return productRepository.countTotalProducts();
+        return productRepository.count();
     }
 
     @Override
     public long getTotalVendors() {
-        return vendorRepository.countTotalVendors();
+        return vendorRepository.count();
     }
 
     @Override
     public long getTotalActivities() {
-        return vendorActivityRepository.countTotalActivities();
+        return vendorActivityRepository.count();
     }
 
     @Override
     public long getTotalRevenue() {
-        return orderRepository.getTotalRevenue();
+        return orderRepository.count();
+    }
+
+    @Override
+    public DashboardStats getCurrentCounts() {
+        return DashboardStats.builder()
+                .totalOrders(getTotalOrders())
+                .totalMembers(getTotalMembers())
+                .totalProducts(getTotalProducts())
+                .totalVendors(getTotalVendors())
+                .totalActivities(getTotalActivities())
+                .totalRevenue(getTotalRevenue())
+                .build();
     }
 }

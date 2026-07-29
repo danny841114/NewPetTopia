@@ -14,9 +14,6 @@ public interface VendorActivityReviewRepository extends JpaRepository<VendorActi
     /* 尋找單一會員對單一活動的評論 */
     Optional<VendorActivityReview> findByMemberIdAndVendorActivityId(Integer memberId, Integer activityId);
 
-    /* 藉活動ID刪除活動 */
-    void deleteByVendorActivityId(Integer id);
-
     /* 尋找單一會員其所有的評論 */
     List<VendorActivityReview> findByMemberId(Integer memberId);
 }

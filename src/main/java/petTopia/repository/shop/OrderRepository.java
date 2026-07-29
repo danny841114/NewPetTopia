@@ -16,14 +16,6 @@ public interface OrderRepository extends JpaRepository<petTopia.model.shop.Order
 	List<Order> findByMemberId(Integer memberId);
 	
 	List<Order> findAllById(Iterable<Integer> orderIds);
-
-	// 統計總訂單數
-	@Query("SELECT COUNT(o) FROM Order o")
-	long countTotalOrders();
-
-	// 統計總收入
-	@Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.orderStatus.name != '已取消'")
-	long getTotalRevenue();
 	
     // 計算總銷售額（僅包含已完成的訂單）
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.orderStatus.name = '已完成'")

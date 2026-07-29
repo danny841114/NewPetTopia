@@ -289,7 +289,7 @@ public class ManageOrderController {
     public ResponseEntity<?> getDashboradSummary() {
         try {
             // 訂單數量
-            long orderCount = orderRepo.countTotalOrders();
+            long orderCount = orderRepo.count();
             // 評論數量
             long reviewCount = productReviewRepo.countTotalProductReviews();
             // 低庫存商品數量

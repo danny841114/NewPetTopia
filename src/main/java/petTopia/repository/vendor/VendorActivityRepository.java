@@ -10,8 +10,6 @@ import petTopia.model.vendor.Vendor;
 import petTopia.model.vendor.VendorActivity;
 
 public interface VendorActivityRepository extends JpaRepository<VendorActivity, Integer> {
-    // 你可以根據需要增加查詢方法，例如：
-    // List<VendorActivity> findByVendorId(Integer vendorId);
     @Query("""
             SELECT va FROM VendorActivity va
             LEFT JOIN FETCH va.vendor
@@ -25,9 +23,7 @@ public interface VendorActivityRepository extends JpaRepository<VendorActivity, 
 
     List<VendorActivity> findByActivityType(ActivityType activityType);
 
-    List<VendorActivity> findDistinctByNameContainingOrDescriptionContainingOrAddressContaining(String nameKey, String descriptionKey, String addressKey);
-
-    // 統計總活動數
-    @Query("SELECT COUNT(va) FROM VendorActivity va")
-    long countTotalActivities();
+    List<VendorActivity> findDistinctByNameContainingOrDescriptionContainingOrAddressContaining(String nameKey,
+                                                                                                String descriptionKey,
+                                                                                                String addressKey);
 }
