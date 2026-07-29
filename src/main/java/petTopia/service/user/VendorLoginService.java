@@ -45,9 +45,9 @@ public class VendorLoginService {
         }
     }
 
-    // TODO: Change repository response type
     public User findByEmail(String email) {
-        return usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR);
+        return usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR)
+                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
     }
 
     // TODO: Change repository response type
@@ -81,15 +81,15 @@ public class VendorLoginService {
 
             // 查找用戶
             logger.info("開始查找商家用戶，email: {}", email);
-            User user = usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR);
+            Optional<User> userOptional = usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR);
             logger.info("查詢用戶結果: {}, 用戶角色: {}",
-                    user != null ? "找到用戶" : "未找到用戶",
-                    user != null ? user.getUserRole() : "無");
+                    userOptional.isPresent() ? "找到用戶" : "未找到用戶",
+                    userOptional.isPresent() ? userOptional.get().getUserRole() : "無");
 
-            if (user == null) {
+            if (userOptional.isEmpty()) {
                 // 檢查是否是會員帳號
-                User memberUser = usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER);
-                if (memberUser != null) {
+                Optional<User> memberUserOptional = usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER);
+                if (memberUserOptional.isPresent()) {
                     logger.warn("登入失敗：會員帳號嘗試登入商家系統，email: {}", email);
                     result.put("success", false);
                     result.put("message", "此帳號為會員帳號，請使用會員登入頁面");
@@ -101,6 +101,8 @@ public class VendorLoginService {
                 result.put("message", "此電子郵件尚未註冊，請先申請成為商家");
                 return result;
             }
+
+            User user = userOptional.get();
 
             // 檢查是否是Google帳號
             logger.info("檢查帳號類型，Provider: {}", user.getProvider());
@@ -171,19 +173,20 @@ public class VendorLoginService {
         return result;
     }
 
-    // TODO: Change repository response type
     @Transactional
     public Map<String, Object> vendorOAuth2Login(String email) {
         Map<String, Object> result = new HashMap<>();
 
         try {
             // 檢查是否有對應的商家帳號
-            User vendor = usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR);
-            if (vendor == null) {
+            Optional<User> vendorUserOptional = usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR);
+            if (vendorUserOptional.isEmpty()) {
                 result.put("success", false);
                 result.put("message", "此Google帳號尚未註冊為商家");
                 return result;
             }
+
+            User vendor = vendorUserOptional.get();
 
             // 檢查商家狀態
             Optional<Vendor> vendorInfo = vendorRepository.findByUserId(vendor.getId());

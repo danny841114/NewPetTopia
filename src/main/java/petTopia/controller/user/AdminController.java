@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -58,8 +59,8 @@ public class AdminController {
 
         try {
             // 檢查是否已存在超級管理員
-            User existingAdmin = userRepository.findByEmailAndUserRole(saEmail, User.UserRole.ADMIN);
-            if (existingAdmin != null && existingAdmin.getIsSuperAdmin()) {
+            Optional<User> userOptional = userRepository.findByEmailAndUserRole(saEmail, User.UserRole.ADMIN);
+            if (userOptional.isPresent() && userOptional.get().getIsSuperAdmin()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "超級管理員帳號已存在"));
             }
 
@@ -357,11 +358,13 @@ public class AdminController {
             String email = userDetails.getUsername();
 
             // 獲取管理員資訊
-            User admin = userRepository.findByEmailAndUserRole(email, User.UserRole.ADMIN);
-            if (admin == null) {
+            Optional<User> userOptional = userRepository.findByEmailAndUserRole(email, User.UserRole.ADMIN);
+            if (userOptional.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "找不到管理員資訊"));
             }
+
+            User admin = userOptional.get();
 
             // 獲取關聯的 Admin 記錄
             Admin adminRecord = adminRepository.findById(admin.getId())

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -122,7 +123,8 @@ public class RegistrationService {
     // TODO: modify repository response type
     public User findByEmail(String email) {
         // 查找任何類型的帳號（會員、商家、本地、Google）
-        return usersRepository.findByEmailAndUserRole(email.toLowerCase().trim(), User.UserRole.MEMBER);
+        return usersRepository.findByEmailAndUserRole(email.toLowerCase().trim(), User.UserRole.MEMBER)
+                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
     }
 
     @Transactional

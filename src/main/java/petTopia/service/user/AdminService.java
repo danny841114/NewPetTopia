@@ -22,6 +22,7 @@ import petTopia.repository.user.MemberRepository;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Transactional(readOnly = true)
@@ -36,11 +37,11 @@ public class AdminService {
     // 管理員登入
     public User adminLogin(LoginRequest request) {
         // 查找管理員帳號
-        User admin = userRepository.findByEmailAndUserRole(request.getEmail(), User.UserRole.ADMIN);
+        Optional<User> userOptional = userRepository.findByEmailAndUserRole(request.getEmail(), User.UserRole.ADMIN);
 
         // 驗證密碼
-        if (admin != null && passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
-            return admin;
+        if (userOptional.isPresent() && passwordEncoder.matches(request.getPassword(), userOptional.get().getPassword())) {
+            return userOptional.get();
         }
 
         return null;

@@ -1,10 +1,10 @@
 package petTopia.service.user;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import petTopia.model.user.User;
 import petTopia.model.user.Member;
 import petTopia.repository.user.UserRepository;
@@ -12,42 +12,36 @@ import petTopia.repository.user.MemberRepository;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
-@Transactional
 public class MemberLoginService {
     private static final Logger logger = LoggerFactory.getLogger(MemberLoginService.class);
 
-    @Autowired
-    private UserRepository usersRepository;
-
-    @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    // 添加默認構造函數
-    public MemberLoginService() {
-        logger.info("創建 MemberLoginService 實例");
-    }
+    private final UserRepository usersRepository;
+    private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public Map<String, Object> memberLogin(String email, String password) {
         Map<String, Object> result = new HashMap<>();
         logger.info("開始會員登入流程，email: {}", email);
 
         try {
-            User user = usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER);
+            Optional<User> userOptional = usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER);
 
-            if (user == null) {
+            if (userOptional.isEmpty()) {
                 logger.warn("登入失敗：會員帳號不存在，email: {}", email);
                 result.put("success", false);
                 result.put("message", "會員帳號不存在");
                 return result;
             }
+
+            User user = userOptional.get();
 
             // 檢查是否是第三方登入帳號且未啟用本地密碼
             if (user.getProvider() != User.Provider.LOCAL && !user.isLocalEnabled()) {
@@ -99,34 +93,11 @@ public class MemberLoginService {
     }
 
     public User findByEmail(String email) {
-        return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER);
+        return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER)
+                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
     }
 
     public User findById(Integer id) {
         return usersRepository.findById(id).orElse(null);
-    }
-
-    public User updateUser(User user) {
-        return usersRepository.save(user);
-    }
-
-    public Map<String, Object> getMemberInfo(User user) {
-        Map<String, Object> memberInfo = new HashMap<>();
-        try {
-            Member member = memberRepository.findByUserId(user.getId()).orElse(null);
-
-            memberInfo.put("userId", user.getId());
-            memberInfo.put("email", user.getEmail());
-            memberInfo.put("userRole", user.getUserRole());
-            memberInfo.put("name", member != null ? member.getName() : user.getEmail().split("@")[0]);
-            memberInfo.put("provider", user.getProvider());
-            memberInfo.put("avatar", null); // 如果需要頭像，可以從 member.getProfilePhoto() 轉換
-            memberInfo.put("memberName", member != null ? member.getName() : user.getEmail().split("@")[0]);
-
-            return memberInfo;
-        } catch (Exception e) {
-            logger.error("獲取會員信息時發生錯誤", e);
-            throw new RuntimeException("獲取會員信息失敗：" + e.getMessage());
-        }
     }
 }

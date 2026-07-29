@@ -10,7 +10,7 @@ import petTopia.model.user.User;
 public interface UserRepository extends JpaRepository<User, Integer> {
     Optional<User> findByVerificationToken(String token);
 
-    User findByEmailAndUserRole(String email, User.UserRole userRole);
+    Optional<User> findByEmailAndUserRole(String email, User.UserRole userRole);
 
     List<User> findByUserRole(User.UserRole userRole);
 
