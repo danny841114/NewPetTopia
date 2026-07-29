@@ -6,12 +6,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import petTopia.dto.user.request.BatchUpdateMembersRequest;
 import petTopia.dto.user.request.CreateMemberRequest;
 import petTopia.dto.user.request.LoginRequest;
 import petTopia.dto.user.request.MemberSearchRequest;
 import petTopia.dto.user.response.MemberPageResponse;
+import petTopia.dto.user.response.UserDetail;
 import petTopia.model.user.User;
 import petTopia.repository.user.UserRepository;
 import petTopia.model.user.Admin;
@@ -22,9 +22,7 @@ import petTopia.repository.user.MemberRepository;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.HashMap;
 
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -46,11 +44,6 @@ public class AdminService {
         }
 
         return null;
-    }
-
-    // 獲取所有用戶列表
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
     }
 
     // 獲取所有會員
@@ -102,50 +95,14 @@ public class AdminService {
 
         // 根據條件過濾
         List<User> filteredMembers = allMembers.stream()
-                .filter(member -> {
-                    // 關鍵字搜尋
-                    if (request.getKeyword() != null && !request.getKeyword().isEmpty()) {
-                        String searchStr = request.getKeyword().toLowerCase();
-                        return String.valueOf(member.getId()).contains(searchStr) ||
-                                member.getEmail().toLowerCase().contains(searchStr);
-                    }
-                    return true;
-                })
-                .filter(member -> {
-                    // 狀態篩選
-                    if (request.getStatus() != null && !request.getStatus().isEmpty()) {
-                        return member.isEmailVerified() == "active".equals(request.getStatus());
-                    }
-                    return true;
-                })
-                .filter(member -> {
-                    // 電子郵件搜尋
-                    if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-                        return member.getEmail().toLowerCase().contains(request.getEmail().toLowerCase());
-                    }
-                    return true;
-                })
+                .filter(member -> checkKeyword(member, request.getKeyword()))
+                .filter(member -> checkStatus(member, request.getStatus()))
+                .filter(member -> checkEmail(member, request.getEmail()))
                 .collect(Collectors.toList());
 
         // 獲取會員詳細資訊
-        List<Map<String, Object>> memberDetails = filteredMembers.stream()
-                .map(user -> {
-                    Member member = memberRepository.findByUserId(user.getId()).orElse(null);
-                    Map<String, Object> detail = new HashMap<>();
-                    detail.put("id", user.getId());
-                    detail.put("email", user.getEmail());
-                    detail.put("emailVerified", user.isEmailVerified());
-                    if (member != null) {
-                        detail.put("name", member.getName());
-                        detail.put("phone", member.getPhone());
-                        detail.put("updatedDate", member.getUpdatedDate());
-                    } else {
-                        detail.put("name", "");
-                        detail.put("phone", "");
-                        detail.put("updatedDate", null);
-                    }
-                    return detail;
-                })
+        List<UserDetail> memberDetails = filteredMembers.stream()
+                .map(this::fromEntity)
                 .collect(Collectors.toList());
 
         // 計算分頁
@@ -154,14 +111,7 @@ public class AdminService {
         int startIndex = request.getPage() * request.getSize();
         int endIndex = Math.min(startIndex + request.getSize(), totalElements);
 
-        List<Map<String, Object>> pageContent = memberDetails.subList(startIndex, endIndex);
-
-        MemberPageResponse.builder()
-                .content(pageContent)
-                .totalElements(totalElements)
-                .totalPages(totalPages)
-                .currentPage(request.getPage())
-                .build();
+        List<UserDetail> pageContent = memberDetails.subList(startIndex, endIndex);
 
         return MemberPageResponse.builder()
                 .content(pageContent)
@@ -238,5 +188,41 @@ public class AdminService {
         }
 
         userRepository.saveAll(userRepository.findAllById(memberIds));
+    }
+
+    private boolean checkKeyword(User member, String keyword) {
+        if (keyword != null && !keyword.isEmpty()) {
+            String searchStr = keyword.toLowerCase();
+            return String.valueOf(member.getId()).contains(searchStr)
+                    || member.getEmail().toLowerCase().contains(searchStr);
+        }
+        return true;
+    }
+
+    private boolean checkStatus(User member, String status) {
+        if (status != null && !status.isEmpty()) {
+            return member.isEmailVerified() == "active".equals(status);
+        }
+        return true;
+    }
+
+    private boolean checkEmail(User member, String email) {
+        if (email != null && !email.isEmpty()) {
+            return member.getEmail().toLowerCase().contains(email.toLowerCase());
+        }
+        return true;
+    }
+
+    private UserDetail fromEntity(User user) {
+        Member member = memberRepository.findByUserId(user.getId()).orElse(null);
+
+        return UserDetail.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .emailVerified(user.isEmailVerified())
+                .name(member != null ? member.getName() : "")
+                .phone(member != null ? member.getPhone() : "")
+                .updatedDate(member != null ? member.getUpdatedDate() : null)
+                .build();
     }
 } 

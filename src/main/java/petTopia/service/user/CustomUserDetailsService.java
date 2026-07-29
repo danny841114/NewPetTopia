@@ -1,33 +1,37 @@
 package petTopia.service.user;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.user.User;
+import petTopia.repository.user.UserRepository;
+
 import java.util.List;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
-
-    @Autowired
-    private MemberLoginService memberLoginService;
+    private final UserRepository usersRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = memberLoginService.findByEmail(email);
-        
+        // TODO: modify method response type
+        User user = usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER);
+
         if (user == null) {
             throw new UsernameNotFoundException("找不到用戶: " + email);
         }
 
         return org.springframework.security.core.userdetails.User
-            .withUsername(user.getEmail())
-            .password(user.getPassword())
-            .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole().toString())))
-            .build();
+                .withUsername(user.getEmail())
+                .password(user.getPassword())
+                .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole().toString())))
+                .build();
     }
 } 

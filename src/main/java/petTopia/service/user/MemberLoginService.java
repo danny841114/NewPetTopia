@@ -9,16 +9,18 @@ import petTopia.model.user.User;
 import petTopia.model.user.Member;
 import petTopia.repository.user.UserRepository;
 import petTopia.repository.user.MemberRepository;
+
 import java.util.HashMap;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
 @Transactional
-public class MemberLoginService extends BaseUserService {
+public class MemberLoginService {
     private static final Logger logger = LoggerFactory.getLogger(MemberLoginService.class);
-    
+
     @Autowired
     private UserRepository usersRepository;
 
@@ -27,7 +29,7 @@ public class MemberLoginService extends BaseUserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-    
+
     // 添加默認構造函數
     public MemberLoginService() {
         logger.info("創建 MemberLoginService 實例");
@@ -76,7 +78,7 @@ public class MemberLoginService extends BaseUserService {
 
             // 獲取會員信息
             Member member = memberRepository.findByUserId(user.getId()).orElse(null);
-            
+
             result.put("success", true);
             result.put("message", "登入成功，歡迎回來！");
             result.put("user", user);
@@ -96,12 +98,6 @@ public class MemberLoginService extends BaseUserService {
         return result;
     }
 
-    public class AuthenticationException extends RuntimeException {
-        public AuthenticationException(String message) {
-            super(message);
-        }
-    }
-
     public User findByEmail(String email) {
         return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER);
     }
@@ -118,7 +114,7 @@ public class MemberLoginService extends BaseUserService {
         Map<String, Object> memberInfo = new HashMap<>();
         try {
             Member member = memberRepository.findByUserId(user.getId()).orElse(null);
-            
+
             memberInfo.put("userId", user.getId());
             memberInfo.put("email", user.getEmail());
             memberInfo.put("userRole", user.getUserRole());
@@ -126,7 +122,7 @@ public class MemberLoginService extends BaseUserService {
             memberInfo.put("provider", user.getProvider());
             memberInfo.put("avatar", null); // 如果需要頭像，可以從 member.getProfilePhoto() 轉換
             memberInfo.put("memberName", member != null ? member.getName() : user.getEmail().split("@")[0]);
-            
+
             return memberInfo;
         } catch (Exception e) {
             logger.error("獲取會員信息時發生錯誤", e);
