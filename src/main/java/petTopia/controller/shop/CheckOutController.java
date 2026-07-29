@@ -1,7 +1,6 @@
 package petTopia.controller.shop;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +84,7 @@ public class CheckOutController {
         return ResponseEntity.ok(lastShippingAddress);
     }
 
-
+    // TODO: get memberId by credential
     @GetMapping("/coupons")
     public ResponseEntity<Object> getCoupons(@RequestParam List<Integer> productIds, @RequestParam Integer memberId) {
         BigDecimal subtotal = cartService.calculateTotalPrice(memberId, productIds);
@@ -105,6 +104,7 @@ public class CheckOutController {
         return ResponseEntity.ok(response);
     }
 
+    // TODO: get memberId by credential
     @PostMapping("/checkout")
     public ResponseEntity<?> processCheckout(@RequestBody ProcessCheckout checkoutData, @RequestParam Integer memberId) {
         Member member = memberService.findById(memberId);
