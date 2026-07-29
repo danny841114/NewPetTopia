@@ -44,7 +44,7 @@ public class VendorService {
     public byte[] findVendorLogoImgById(Integer vendorId) {
         return vendorRepository.findById(vendorId)
                 .map(Vendor::getLogoImg)
-                .orElseThrow(() -> new EntityNotFoundException("Vendor logo image not found"));
+                .orElse(null);
     }
 
     /* 排除特定店家之清單 */

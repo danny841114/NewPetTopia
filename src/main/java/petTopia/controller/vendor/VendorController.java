@@ -31,7 +31,9 @@ public class VendorController {
     @GetMapping(path = "/{vendorId}/logImg", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getVendorLogoImage(@PathVariable Integer vendorId) {
         byte[] logoImg = vendorService.findVendorLogoImgById(vendorId);
-        return ResponseEntity.ok(logoImg);
+        return logoImg != null
+                ? ResponseEntity.ok(logoImg)
+                : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/all")
@@ -86,6 +88,8 @@ public class VendorController {
     @GetMapping(path = "/img/{id}", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getVendorImg(@PathVariable Integer id) {
         byte[] vendorImg = vendorImagesService.getVendorImageById(id);
-        return ResponseEntity.ok(vendorImg);
+        return vendorImg != null
+                ? ResponseEntity.ok(vendorImg)
+                : ResponseEntity.notFound().build();
     }
 }

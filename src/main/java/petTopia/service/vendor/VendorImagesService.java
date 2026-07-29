@@ -27,6 +27,6 @@ public class VendorImagesService {
     public byte[] getVendorImageById(Integer imageId) {
         return vendorImagesRepository.findById(imageId)
                 .map(VendorImages::getImage)
-                .orElseThrow(() -> new EntityNotFoundException("Vendor image not found"));
+                .orElse(null);
     }
 }

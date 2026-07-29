@@ -87,7 +87,9 @@ public class ActivityController {
 
     @GetMapping(path = "/img/{id}", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getActivityImage(@PathVariable Integer id) {
-        byte[] activityImage = vendorActivityImagesService.findById(id);
-        return ResponseEntity.ok(activityImage);
+        byte[] activityImg = vendorActivityImagesService.findById(id);
+        return activityImg != null
+                ? ResponseEntity.ok(activityImg)
+                : ResponseEntity.notFound().build();
     }
 }
