@@ -14,7 +14,7 @@ import petTopia.repository.shop.CouponRepository;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
-public class CouponService {
+public class CouponAdminService {
     private final CouponRepository couponRepository;
 
     public Page<Coupon> getCoupons(GetCouponsRequest request) {
