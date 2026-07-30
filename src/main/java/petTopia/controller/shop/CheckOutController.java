@@ -178,7 +178,7 @@ public class CheckOutController {
     public ResponseEntity<String> handleEcPayCallback(@RequestParam Map<String, String> callbackParams) {
         try {
             // 呼叫 Service 層處理回調邏輯
-            String response = paymentService.handleEcpayCallback(callbackParams);
+            String response = paymentService.handleEcPayCallback(callbackParams);
 
             return ResponseEntity.ok(response); // 確保回應是 "1|OK" 或 "0|Error: XXX"
         } catch (Exception e) {

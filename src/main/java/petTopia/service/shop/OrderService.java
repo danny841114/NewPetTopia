@@ -11,23 +11,22 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.shop.OrderHistoryDto;
 import petTopia.dto.shop.OrderItemDto;
-import petTopia.dto.shop.OrderSummaryAmoutDto;
+import petTopia.dto.shop.OrderSummaryAmountDto;
 import petTopia.dto.shop.request.OrderHistoryRequest;
 import petTopia.model.shop.Cart;
 import petTopia.model.shop.Coupon;
@@ -53,60 +52,33 @@ import petTopia.repository.shop.PaymentRepository;
 import petTopia.repository.shop.ShippingCategoryRepository;
 import petTopia.repository.shop.ShippingRepository;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class OrderService {
-    @Autowired
-    private CouponRepository couponRepo;
+    private final CouponRepository couponRepo;
+    private final CartService cartService;
+    private final CartRepository cartRepo;
+    private final ShippingCategoryRepository shippingCategoryRepo;
+    private final CouponService couponService;
+    private final PaymentCategoryRepository paymentCategoryRepo;
+    private final OrderRepository orderRepo;
+    private final ShippingRepository shippingRepo;
+    private final ProductService productService;
+    private final PaymentService paymentService;
+    private final OrderStatusRepository orderStatusRepo;
+    private final ShippingService shippingService;
+    private final OrderDetailService orderDetailService;
+    private final OrderDetailRepository orderDetailRepo;
+    private final PaymentRepository paymentRepo;
+    private final EntityManager entityManager;
 
-    @Autowired
-    private CartService cartService;
-
-    @Autowired
-    private CartRepository cartRepo;
-
-    @Autowired
-    private ShippingCategoryRepository shippingCategoryRepo;
-
-    @Autowired
-    private CouponService couponService;
-
-    @Autowired
-    private PaymentCategoryRepository paymentCategoryRepo;
-
-    @Autowired
-    private OrderRepository orderRepo;
-
-    @Autowired
-    private ShippingRepository shippingRepo;
-
-    @Autowired
-    private ProductService productService;
-
-    @Autowired
-    private PaymentService paymentService;
-
-    @Autowired
-    private OrderStatusRepository orderStatusRepo;
-
-    @Autowired
-    private ShippingService shippingService;
-
-    @Autowired
-    private OrderDetailService orderDetailService;
-
-    @Autowired
-    private OrderDetailRepository orderDetailRepo;
-
-    @Autowired
-    private PaymentRepository paymentRepo;
-
-    @PersistenceContext
-    private EntityManager entityManager;
 //	================================================
 
-
-    public OrderSummaryAmoutDto calculateOrderSummary(Integer memberId, Integer couponId, Integer shippingCategoryId, List<Integer> productIds) {
-
+    public OrderSummaryAmountDto calculateOrderSummary(Integer memberId,
+                                                       Integer couponId,
+                                                       Integer shippingCategoryId,
+                                                       List<Integer> productIds) {
         // 計算商品總金額
         BigDecimal subtotal = cartService.calculateTotalPrice(memberId, productIds);
 
@@ -114,7 +86,8 @@ public class OrderService {
         BigDecimal discountAmount = BigDecimal.ZERO;
         if (couponId != null) {
             Coupon coupon = couponRepo.findById(couponId)
-                    .orElseThrow(() -> new IllegalArgumentException("找不到對應的優惠券"));
+                    .orElseThrow(() -> new EntityNotFoundException("找不到對應的優惠券"));
+
             discountAmount = couponService.getDiscountAmountByCoupon(coupon, subtotal);
 
             // 四捨五入到整數
@@ -136,22 +109,30 @@ public class OrderService {
         orderTotal = orderTotal.setScale(0, RoundingMode.HALF_UP);
 
         // 回傳 DTO
-        return new OrderSummaryAmoutDto(subtotal, discountAmount, shippingFee, orderTotal);
+        return new OrderSummaryAmountDto(subtotal, discountAmount, shippingFee, orderTotal);
     }
 
-
+    // TODO: parameters change to DTO
     //新增訂單
     @Transactional
-    public Map<String, Object> createOrder(Member member, Integer memberId,
-                                           Integer couponId, Integer shippingCategoryId,
-                                           Integer paymentCategoryId, BigDecimal paymentAmount,
-                                           String street, String city, String receiverName, String receiverPhone, List<Integer> productIds) throws Exception {
+    public Map<String, Object> createOrder(Member member,
+                                           Integer memberId,
+                                           Integer couponId,
+                                           Integer shippingCategoryId,
+                                           Integer paymentCategoryId,
+                                           BigDecimal paymentAmount,
+                                           String street,
+                                           String city,
+                                           String receiverName,
+                                           String receiverPhone,
+                                           List<Integer> productIds) {
 
         // 查詢會員購物車中這些商品
         List<Cart> cartItems = cartRepo.findByMemberIdAndProductIdIn(memberId, productIds);
 
         // 更新庫存
         try {
+            // TODO: do not use other service
             productService.updateStockLevelsByCartItems(cartItems);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("庫存不足，無法完成訂單", e);
@@ -166,14 +147,15 @@ public class OrderService {
         // 若有使用優惠券，計算折扣金額
         if (couponId != null) {
             coupon = couponRepo.findById(couponId)
-                    .orElseThrow(() -> new IllegalArgumentException("找不到對應的優惠券"));
+                    .orElseThrow(() -> new EntityNotFoundException("Coupon not found"));
+
             discountAmount = couponService.getDiscountAmountByCoupon(coupon, subtotal);
         }
 
         // 透過運送方式 ID 拿到對應的運費
         BigDecimal shippingFee = shippingCategoryRepo.findById(shippingCategoryId)
                 .map(ShippingCategory::getShippingCost)
-                .orElse(BigDecimal.ZERO); // 如果找不到運送方式，預設運費為 0
+                .orElse(BigDecimal.ZERO);
 
         // 計算最終金額：商品總金額 - 折扣 + 運費
         BigDecimal orderTotal = subtotal.subtract(discountAmount).add(shippingFee);
@@ -184,10 +166,11 @@ public class OrderService {
         // ==================建立訂單==================
         // 設定訂單狀態 (預設為 "待付款")
         OrderStatus orderStatus = orderStatusRepo.findById(1)  // "待付款" 狀態
-                .orElseThrow(() -> new IllegalArgumentException("找不到待付款狀態"));
+                .orElseThrow(() -> new EntityNotFoundException("Order status not found"));
 
         // 建立新訂單
         Order order = new Order();
+
         order.setMember(member);
         order.setSubtotal(subtotal);
         order.setCoupon(coupon);
@@ -198,35 +181,31 @@ public class OrderService {
         order.setCreatedTime(new Date());
         order.setUpdatedDate(new Date());
 
-        orderRepo.save(order); // 存入資料庫
+        orderRepo.save(order);
 
         // 訂單詳情
         orderDetailService.createOrderDetails(order, cartItems);
 
         // 更新優惠券使用次數
-        if (couponId != null) {
-            couponService.updateCouponUsageCount(memberId);
-        }
+        if (couponId != null) couponService.updateCouponUsageCount(memberId);
 
         // ==================建立運送資訊================
         ShippingAddress shippingAddress = shippingService.createShippingAddress(member, city, street);
+
         ShippingCategory shippingCategory = shippingCategoryRepo.findById(shippingCategoryId)
-                .orElseThrow(() -> new IllegalArgumentException("找不到運送方式"));
+                .orElseThrow(() -> new EntityNotFoundException("Shipping category not found"));
 
         Shipping shipping = shippingService.createShipping(order, shippingAddress, shippingCategory, receiverName, receiverPhone);
+
         shippingRepo.save(shipping);
 
         // ==============建立付款資訊==============
         PaymentCategory paymentCategory = paymentCategoryRepo.findById(paymentCategoryId)
-                .orElseThrow(() -> new IllegalArgumentException("找不到付款方式"));
-
+                .orElseThrow(() -> new EntityNotFoundException("Payment category not found"));
 
         // **貨到付款**
         if (paymentCategory.getId() == 2) {
-            paymentAmount = null;
-            boolean paymentSuccess = paymentService.createCashOnDeliveryPayment(order, paymentCategory);
-
-            if (!paymentSuccess) {
+            if (!paymentService.createCashOnDeliveryPayment(order, paymentCategory)) {
                 throw new RuntimeException("貨到付款處理失敗，請重新操作");
             }
 
@@ -236,19 +215,17 @@ public class OrderService {
         } else {
             // **信用卡支付或其他支付方式處理**
             if (paymentCategory.getId() == 1) {  // 若是信用卡付款
-
                 // 直接將訂單狀態設為 "待處理"    //等付款後再變成待出貨
                 order.setOrderStatus(orderStatusRepo.findById(1)
                         .orElseThrow(() -> new IllegalArgumentException("找不到待處理狀態")));
-                boolean paymentSuccess = paymentService.createCreditCardPayment(order, paymentCategory);
 
-                if (!paymentSuccess) {
+                if (!paymentService.createCreditCardPayment(order, paymentCategory)) {
                     throw new RuntimeException("信用卡付款處理失敗，請重新操作");
                 }
             }
         }
 
-        orderRepo.save(order); // 更新訂單狀態
+        orderRepo.save(order);
 
         // 清空購物車
         cartService.clearCart(memberId, productIds);
@@ -260,21 +237,33 @@ public class OrderService {
         return response;
     }
 
-    //把order轉成orderHistoryDto
+    //把 order 轉成 orderHistoryDto
     private OrderHistoryDto convertToOrderHistoryDto(Order order) {
         OrderHistoryDto orderHistory = new OrderHistoryDto();
+
         orderHistory.setOrderId(order.getId());
         orderHistory.setOrderStatus(order.getOrderStatus().getName()); // 設定訂單狀態
         orderHistory.setCreatedTime(new java.sql.Date(order.getCreatedTime().getTime()));
         orderHistory.setTotalAmount(order.getTotalAmount());
 
         // 查詢付款狀態
-        Payment payment = paymentRepo.findByOrderId(order.getId());
-        orderHistory.setPaymentStatus(payment != null ? payment.getPaymentStatus().getName() : "待付款"); // 設定付款狀態
-        orderHistory.setPaymentCategory(payment.getPaymentCategory().getName());
+        Payment payment = paymentRepo.findByOrderId(order.getId()).orElse(null);
 
-        Shipping shipping = shippingRepo.findByOrderId(order.getId());
-        orderHistory.setShippingCategory(shipping.getShippingCategory().getName());
+        if (payment != null && payment.getPaymentStatus() != null) {
+            orderHistory.setPaymentStatus(payment.getPaymentStatus().getName());
+        } else {
+            orderHistory.setPaymentStatus("待付款");
+        }
+
+        if (payment != null && payment.getPaymentCategory() != null) {
+            orderHistory.setPaymentCategory(payment.getPaymentCategory().getName());
+        }
+
+        Shipping shipping = shippingRepo.findByOrderId(order.getId()).orElse(null);
+
+        if (shipping != null && shipping.getShippingCategory() != null) {
+            orderHistory.setShippingCategory(shipping.getShippingCategory().getName());
+        }
 
         // 查詢該訂單的商品明細
         List<OrderDetail> orderDetails = orderDetailRepo.findByOrderId(order.getId());

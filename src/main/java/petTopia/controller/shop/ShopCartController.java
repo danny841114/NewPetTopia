@@ -6,7 +6,6 @@ import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -63,14 +62,8 @@ public class ShopCartController {
     // 會員購物車頁面 => 刪除購物車
     @GetMapping("/api/deleteCartById")
     public ResponseEntity<?> deleteCartById(@RequestParam Integer cartId) {
-        // 獲取該商品的購物車
-        Integer deleteCartId = cartService.deleteCartById(cartId);
-
-        if (deleteCartId != null) {
-            return new ResponseEntity<>(deleteCartId, HttpStatus.OK);
-        }
-
-        return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        cartService.deleteCartById(cartId);
+        return ResponseEntity.noContent().build();
     }
 
     // TODO: NOT MODIFIED
@@ -101,7 +94,7 @@ public class ShopCartController {
     // HeaderShop => 更新會員購物車顯示數量
     @GetMapping("/api/getMemberCartCount")
     public ResponseEntity<Integer> getMemberCartCount(@RequestParam Integer memberId) {
-        Integer cartCount = cartService.getMemeberCartCount(memberId);
+        Integer cartCount = cartService.getMemberCartCount(memberId);
         return ResponseEntity.ok(cartCount);
     }
 }

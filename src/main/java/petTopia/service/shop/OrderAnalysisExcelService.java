@@ -1,36 +1,36 @@
 package petTopia.service.shop;
 
 import org.springframework.stereotype.Service;
-
 import petTopia.dto.shop.OrderAnalysisDto;
 import petTopia.dto.shop.OrderItemAnalysisDto;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
 @Service
 public class OrderAnalysisExcelService {
-	
     // 生成訂單和商品明細 Excel
-    public byte[] generateOrdersAndItemsExcel(List<OrderAnalysisDto> orders, List<OrderItemAnalysisDto> orderItems) throws IOException {
-        Workbook workbook = new XSSFWorkbook();
+    public byte[] generateOrdersAndItemsExcel(List<OrderAnalysisDto> orders,
+                                              List<OrderItemAnalysisDto> orderItems) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            // 設置訂單報表分頁
+            Sheet ordersSheet = workbook.createSheet("訂單");
+            createOrdersSheetHeader(ordersSheet);
+            fillOrdersData(ordersSheet, orders);
 
-        // 設置訂單報表分頁
-        Sheet ordersSheet = workbook.createSheet("訂單");
-        createOrdersSheetHeader(ordersSheet);
-        fillOrdersData(ordersSheet, orders);
+            // 設置商品明細報表分頁
+            Sheet orderItemsSheet = workbook.createSheet("訂單詳細項目");
+            createOrderItemsSheetHeader(orderItemsSheet);
+            fillOrderItemsData(orderItemsSheet, orderItems);
 
-        // 設置商品明細報表分頁
-        Sheet orderItemsSheet = workbook.createSheet("訂單詳細項目");
-        createOrderItemsSheetHeader(orderItemsSheet);
-        fillOrderItemsData(orderItemsSheet, orderItems);
-
-        // 轉換為 byte[]
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        workbook.write(out);
-        return out.toByteArray();
+            // 轉換為 byte[]
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+        }
     }
 
     // 設置訂單分頁的表頭
@@ -65,12 +65,12 @@ public class OrderAnalysisExcelService {
             row.createCell(3).setCellValue(order.getMemberId());
             row.createCell(4).setCellValue(order.getMemberName());
             row.createCell(5).setCellValue(order.getMemberPhone());
-            
-            row.createCell(6).setCellValue(Math.round(order.getSubtotal())); 
-            row.createCell(7).setCellValue(Math.round(order.getDiscountAmount())); 
-            row.createCell(8).setCellValue(Math.round(order.getShippingFee())); 
-            row.createCell(9).setCellValue(Math.round(order.getTotalAmount())); 
-            row.createCell(10).setCellValue(Math.round(order.getPaymentAmount())); 
+
+            row.createCell(6).setCellValue(Math.round(order.getSubtotal()));
+            row.createCell(7).setCellValue(Math.round(order.getDiscountAmount()));
+            row.createCell(8).setCellValue(Math.round(order.getShippingFee()));
+            row.createCell(9).setCellValue(Math.round(order.getTotalAmount()));
+            row.createCell(10).setCellValue(Math.round(order.getPaymentAmount()));
 
             row.createCell(11).setCellValue(order.getPaymentCategory());
             row.createCell(12).setCellValue(order.getPaymentStatus());
@@ -107,9 +107,9 @@ public class OrderAnalysisExcelService {
             row.createCell(4).setCellValue(item.getProductColor());
             row.createCell(5).setCellValue(item.getProductSize());
             row.createCell(6).setCellValue(item.getQuantity());
-            row.createCell(7).setCellValue(Math.round(item.getUnitPrice())); 
-            row.createCell(8).setCellValue(Math.round(item.getDiscountPrice())); 
-            row.createCell(9).setCellValue(Math.round(item.getTotalPrice())); 
-       }
+            row.createCell(7).setCellValue(Math.round(item.getUnitPrice()));
+            row.createCell(8).setCellValue(Math.round(item.getDiscountPrice()));
+            row.createCell(9).setCellValue(Math.round(item.getTotalPrice()));
+        }
     }
 }

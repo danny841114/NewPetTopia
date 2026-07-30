@@ -21,7 +21,6 @@ import petTopia.model.user.Member;
 @Entity
 @Table(name = "member_coupon")
 public class MemberCoupon {
-
     @EmbeddedId
     private MemberCouponId id; // 使用複合主鍵
 
@@ -35,10 +34,10 @@ public class MemberCoupon {
     @MapsId("couponId") // 這樣可以直接透過 couponId 取得優惠券
     @JoinColumn(name = "coupons_id", referencedColumnName = "id")
     private Coupon coupon;
-    
+
     @Column(name = "usage_count")
     private Integer usageCount; // 新增剩餘次數
-    
-    @Column(name="status", columnDefinition = "bit default 1")
+
+    @Column(name = "status", columnDefinition = "bit default 1")
     private Boolean status;
 }

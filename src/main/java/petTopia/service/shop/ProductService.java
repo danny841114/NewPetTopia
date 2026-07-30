@@ -114,13 +114,19 @@ public class ProductService {
     }
 
     public ProductDetailResponse getProductsByOption(OptionProductRequest request) {
-        List<Product> products = new ArrayList<>();
+        List<Product> products = switch (request.getOptionName()) {
+            case "size" -> productRepository.findByProductDetailIdAndProductSizeId(
+                    request.getProductDetailId(),
+                    request.getOptionId()
+            );
 
-        if ("size".equals(request.getOptionName())) {
-            products = productRepository.findByProductDetailIdAndProductSizeId(request.getProductDetailId(), request.getOptionId());
-        } else if ("color".equals(request.getOptionName())) {
-            products = productRepository.findByProductDetailIdAndProductColorId(request.getProductDetailId(), request.getOptionId());
-        }
+            case "color" -> productRepository.findByProductDetailIdAndProductColorId(
+                    request.getProductDetailId(),
+                    request.getOptionId()
+            );
+
+            default -> new ArrayList<>();
+        };
 
         Integer totalStockQuantity = 0;
 

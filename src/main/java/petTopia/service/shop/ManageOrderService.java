@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -72,7 +73,7 @@ public class ManageOrderService {
 
 //	================================================
 
-    //把order轉成manageAllOrdersDto
+    // 把 order 轉成 manageAllOrdersDto
     private ManageAllOrdersDto convertToManageAllOrdersDto(Order order) {
         ManageAllOrdersDto managedOrder = new ManageAllOrdersDto();
 
@@ -84,13 +85,22 @@ public class ManageOrderService {
         managedOrder.setNote(order.getNote());
 
         // 查詢付款狀態
-        Payment payment = paymentRepo.findByOrderId(order.getId());
-        managedOrder.setPaymentStatus(payment != null ? payment.getPaymentStatus().getName() : "待付款");
-        managedOrder.setPaymentCategory(payment.getPaymentCategory().getName());
+        Payment payment = paymentRepo.findByOrderId(order.getId()).orElse(null);
+        if (payment != null && payment.getPaymentStatus() != null) {
+            managedOrder.setPaymentStatus(payment.getPaymentStatus().getName());
+        } else {
+            managedOrder.setPaymentStatus("待付款");
+        }
+
+        if (payment != null && payment.getPaymentCategory() != null) {
+            managedOrder.setPaymentCategory(payment.getPaymentCategory().getName());
+        }
 
         // 配送狀態
-        Shipping shipping = shippingRepo.findByOrderId(order.getId());
-        managedOrder.setShippingCategory(shipping.getShippingCategory().getName());
+        Shipping shipping = shippingRepo.findByOrderId(order.getId()).orElse(null);
+        if (shipping != null && shipping.getShippingCategory() != null) {
+            managedOrder.setShippingCategory(shipping.getShippingCategory().getName());
+        }
 
         // 查詢該訂單的商品明細
         List<OrderDetail> orderDetails = orderDetailRepo.findByOrderId(order.getId());
@@ -106,8 +116,8 @@ public class ManageOrderService {
     }
 
     public Page<ManageAllOrdersDto> getManageOrderHistoryFilter(OrderHistoryRequest request) {
-        int page = request.getPage() < 1 ? 1 : request.getPage();
-        int size = request.getSize() < 1 ? 10 : request.getSize();
+        int page = (request.getPage() < 1) ? 1 : request.getPage();
+        int size = (request.getSize() < 1) ? 10 : request.getSize();
 
         CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
         CriteriaQuery<Order> query = criteriaBuilder.createQuery(Order.class);
@@ -117,55 +127,92 @@ public class ManageOrderService {
 
         // 會員編號
         if (request.getMemberId() != null && !request.getMemberId().isEmpty()) {
-            predicates.add(criteriaBuilder.equal(root.get("member").get("id"), request.getMemberId()));
+            Predicate memberIdPredicate = criteriaBuilder.equal(
+                    root.get("member").get("id"),
+                    request.getMemberId()
+            );
+            predicates.add(memberIdPredicate);
         }
 
         // 訂單編號篩選
         if (request.getOrderId() != null && !request.getOrderId().isEmpty()) {
-            predicates.add(criteriaBuilder.equal(root.get("id"), request.getOrderId()));
+            Predicate orderIdPredicate = criteriaBuilder.equal(
+                    root.get("id"),
+                    request.getOrderId()
+            );
+            predicates.add(orderIdPredicate);
         }
 
         // 訂單狀態篩選
         if (request.getOrderStatus() != null && !request.getOrderStatus().isEmpty()) {
-            Predicate statusPredicate = criteriaBuilder.equal(root.get("orderStatus").get("name"), request.getOrderStatus());
+            Predicate statusPredicate = criteriaBuilder.equal(
+                    root.get("orderStatus").get("name"),
+                    request.getOrderStatus()
+            );
             predicates.add(statusPredicate);
         }
 
         // 付款狀態篩選
         if (request.getPaymentStatus() != null && !request.getPaymentStatus().isEmpty()) {
             Join<Order, Payment> paymentJoin = root.join("payment", JoinType.LEFT);
-            Predicate paymentStatusPredicate = criteriaBuilder.equal(paymentJoin.get("paymentStatus").get("name"), request.getPaymentStatus());
+            Predicate paymentStatusPredicate = criteriaBuilder.equal(
+                    paymentJoin.get("paymentStatus").get("name"),
+                    request.getPaymentStatus()
+            );
             predicates.add(paymentStatusPredicate);
         }
 
         // 付款方式篩選
         if (request.getPaymentCategory() != null && !request.getPaymentCategory().isEmpty()) {
             Join<Order, Payment> paymentJoin = root.join("payment", JoinType.LEFT);
-            predicates.add(criteriaBuilder.equal(paymentJoin.get("paymentCategory").get("name"), request.getPaymentCategory()));
+            Predicate paymentPredicate = criteriaBuilder.equal(
+                    paymentJoin.get("paymentCategory").get("name"),
+                    request.getPaymentCategory()
+            );
+            predicates.add(paymentPredicate);
         }
 
         // 配送方式篩選
         if (request.getShippingCategory() != null && !request.getShippingCategory().isEmpty()) {
             Join<Order, Shipping> shippingJoin = root.join("shipping", JoinType.LEFT);
-            predicates.add(criteriaBuilder.equal(shippingJoin.get("shippingCategory").get("name"), request.getShippingCategory()));
+            Predicate shippingPredicate = criteriaBuilder.equal(
+                    shippingJoin.get("shippingCategory").get("name"),
+                    request.getShippingCategory()
+            );
+            predicates.add(shippingPredicate);
         }
 
         // 訂單日期範圍
         if (request.getStartDate() != null) {
-            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdTime"), request.getStartDate()));
+            Predicate createdTimePredicate = criteriaBuilder.greaterThanOrEqualTo(
+                    root.get("createdTime"),
+                    request.getStartDate()
+            );
+            predicates.add(createdTimePredicate);
         }
+
         if (request.getEndDate() != null) {
-            predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdTime"), request.getEndDate()));
+            Predicate endTimePredicate = criteriaBuilder.lessThanOrEqualTo(
+                    root.get("endTime"),
+                    request.getEndDate()
+            );
+            predicates.add(endTimePredicate);
         }
 
         // 搜尋關鍵字（訂單編號 or 商品名稱）
         if (request.getProductKeyword() != null && !request.getProductKeyword().isEmpty()) {
-            Predicate orderIdPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("id").as(String.class)), "%" + request.getProductKeyword().toLowerCase() + "%");
+            Predicate orderIdPredicate = criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("id").as(String.class)),
+                    "%" + request.getProductKeyword().toLowerCase() + "%"
+            );
 
             // 商品名稱搜尋
             Join<Order, OrderDetail> orderDetailsJoin = root.join("orderDetails", JoinType.LEFT);
             Join<OrderDetail, Product> productJoin = orderDetailsJoin.join("product", JoinType.LEFT);
-            Predicate productNamePredicate = criteriaBuilder.like(criteriaBuilder.lower(productJoin.get("productDetail").get("name")), "%" + request.getProductKeyword().toLowerCase() + "%");
+            Predicate productNamePredicate = criteriaBuilder.like(
+                    criteriaBuilder.lower(productJoin.get("productDetail").get("name")),
+                    "%" + request.getProductKeyword().toLowerCase() + "%"
+            );
 
             predicates.add(criteriaBuilder.or(orderIdPredicate, productNamePredicate));
         }
@@ -196,7 +243,6 @@ public class ManageOrderService {
     //更新單一訂單
     @Transactional
     public Order updateOrder(Integer orderId, UpdateOneOrderDto updatedOrderRequest) {
-
         String orderStatus = updatedOrderRequest.getOrderStatus();
         String paymentStatus = updatedOrderRequest.getPaymentStatus();
         String paymentCategory = updatedOrderRequest.getPaymentCategory();
@@ -206,7 +252,7 @@ public class ManageOrderService {
 
         // 根據訂單 ID 查詢訂單
         Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
 
         //更新訂單備註
         if (note != null) {
@@ -217,11 +263,13 @@ public class ManageOrderService {
         // 更新訂單狀態(order>orderStatus)
         if (orderStatus != null) {
             OrderStatus existOrderStatus = orderStatusRepo.findByName(orderStatus)
-                    .orElseThrow(() -> new RuntimeException("Order status not found"));
+                    .orElseThrow(() -> new EntityNotFoundException("Order status not found"));
 
             // 如果狀態是配送中就更新配送日期
             if ("配送中".equals(orderStatus)) {
-                Shipping shipping = shippingRepo.findByOrderId(orderId);
+                Shipping shipping = shippingRepo.findByOrderId(orderId)
+                        .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
+
                 shipping.setShippingDate(new Date());
                 shipping.setUpdatedTime(new Date());
             }
@@ -233,12 +281,10 @@ public class ManageOrderService {
         // 更新付款狀態(payment>paymentStatus)
         if (paymentStatus != null) {
             PaymentStatus existPaymentStatus = paymentStatusRepo.findByName(paymentStatus)
-                    .orElseThrow(() -> new RuntimeException("Payment status not found"));
+                    .orElseThrow(() -> new EntityNotFoundException("Payment status not found"));
 
-            Payment payment = paymentRepo.findByOrderId(orderId);
-            if (payment == null) {
-                throw new RuntimeException("Payment not found");
-            }
+            Payment payment = paymentRepo.findByOrderId(orderId)
+                    .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
 
             // 只有在付款狀態為 "已付款" 時，才設置付款日期
             if ("已付款".equals(paymentStatus)) {
@@ -247,18 +293,17 @@ public class ManageOrderService {
 
             payment.setPaymentStatus(existPaymentStatus);
             payment.setUpdatedDate(new Date());
+
             paymentRepo.save(payment);
         }
 
         // 更新付款方式 (payment>paymentCategory)
         if (paymentCategory != null) {
             PaymentCategory existPaymentCategory = paymentCategoryRepo.findByName(paymentCategory)
-                    .orElseThrow(() -> new RuntimeException("Payment category not found"));
+                    .orElseThrow(() -> new EntityNotFoundException("Payment category not found"));
 
-            Payment payment = paymentRepo.findByOrderId(orderId);
-            if (payment == null) {
-                throw new RuntimeException("Payment not found");
-            }
+            Payment payment = paymentRepo.findByOrderId(orderId)
+                    .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
 
             payment.setPaymentCategory(existPaymentCategory);
             payment.setUpdatedDate(new Date());
@@ -269,12 +314,10 @@ public class ManageOrderService {
         // 更新配送方式 (shipping>shippingCategory)
         if (shippingCategory != null) {
             ShippingCategory existShippingCategory = shippingCategoryRepo.findByName(shippingCategory)
-                    .orElseThrow(() -> new RuntimeException("Shipping category not found"));
+                    .orElseThrow(() -> new EntityNotFoundException("Shipping category not found"));
 
-            Shipping shipping = shippingRepo.findByOrderId(orderId);
-            if (shipping == null) {
-                throw new RuntimeException("Shipping not found");
-            }
+            Shipping shipping = shippingRepo.findByOrderId(orderId)
+                    .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
 
             shipping.setShippingCategory(existShippingCategory);
             shipping.setUpdatedTime(new Date());
@@ -290,58 +333,58 @@ public class ManageOrderService {
     }
 
     //批量更新訂單狀態或是付款狀態
+    @Transactional
     public void updateBatchOrders(List<Integer> orderIds, String batchStatus) {
-        if (orderIds == null || orderIds.isEmpty()) {
-            throw new RuntimeException("訂單 ID 清單不能為空");
-        }
+        if (orderIds == null || orderIds.isEmpty()) throw new EntityNotFoundException("Order ID list is empty");
 
         List<Order> orders = orderRepo.findAllById(orderIds);
 
         for (Order order : orders) {
             if ("已付款".equals(batchStatus)) {
-                // 更新付款狀態
-                Payment payment = paymentRepo.findByOrderId(order.getId());
+                Payment payment = paymentRepo.findByOrderId(order.getId()).orElse(null);
+
                 if (payment != null) {
                     PaymentStatus existPaymentStatus = paymentStatusRepo.findByName("已付款")
-                            .orElseThrow(() -> new RuntimeException("Payment status not found"));
+                            .orElseThrow(() -> new EntityNotFoundException("Payment status not found"));
+
                     payment.setPaymentStatus(existPaymentStatus);
-                    payment.setPaymentDate(new Date());  // 設置付款日期
+                    payment.setPaymentDate(new Date());
                     payment.setUpdatedDate(new Date());
+
                     paymentRepo.save(payment);
                 }
-
             } else if ("配送中".equals(batchStatus)) {
-                // 更新配送中狀態
                 OrderStatus existOrderStatus = orderStatusRepo.findByName("配送中")
-                        .orElseThrow(() -> new RuntimeException("Order status not found"));
+                        .orElseThrow(() -> new EntityNotFoundException("Order status not found"));
+
                 order.setOrderStatus(existOrderStatus);
                 order.setUpdatedDate(new Date());
 
-                Shipping shipping = shippingRepo.findByOrderId(order.getId());
+                Shipping shipping = shippingRepo.findByOrderId(order.getId()).orElse(null);
+
                 if (shipping != null) {
-                    shipping.setShippingDate(new Date());  // 設置配送日期
+                    shipping.setShippingDate(new Date());
                     shipping.setUpdatedTime(new Date());
                     shippingRepo.save(shipping);
                 }
-
             } else if ("待收貨".equals(batchStatus)) {
                 OrderStatus existOrderStatus = orderStatusRepo.findByName("待收貨")
-                        .orElseThrow(() -> new RuntimeException("Status not found"));
+                        .orElseThrow(() -> new EntityNotFoundException("Status not found"));
+
                 order.setOrderStatus(existOrderStatus);
                 order.setUpdatedDate(new Date());
-
             } else if ("已完成".equals(batchStatus)) {
                 OrderStatus existOrderStatus = orderStatusRepo.findByName("已完成")
-                        .orElseThrow(() -> new RuntimeException("Status not found"));
+                        .orElseThrow(() -> new EntityNotFoundException("Status not found"));
+
                 order.setOrderStatus(existOrderStatus);
                 order.setUpdatedDate(new Date());
-
             } else if ("已取消".equals(batchStatus)) {
                 OrderStatus existOrderStatus = orderStatusRepo.findByName("已取消")
-                        .orElseThrow(() -> new RuntimeException("Status not found"));
+                        .orElseThrow(() -> new EntityNotFoundException("Status not found"));
+
                 order.setOrderStatus(existOrderStatus);
                 order.setUpdatedDate(new Date());
-
             }
 
             orderRepo.save(order);
@@ -349,9 +392,10 @@ public class ManageOrderService {
     }
 
     //刪除訂單(包含訂單細節、配送資訊、付款資訊)
+    @Transactional
     public void deleteOrder(Integer orderId) {
         orderRepo.findById(orderId)
-                .ifPresent(order -> orderRepo.delete(order));
+                .ifPresent(orderRepo::delete);
     }
 
     // 獲取銷售數據（總銷售額、每日銷售趨勢、每月銷售趨勢）
@@ -417,17 +461,14 @@ public class ManageOrderService {
     //財務報表分析
     public OrderAnalysisDto getOrderAnalysisById(Integer orderId) {
         // 查詢訂單
-        Optional<Order> orderOpt = orderRepo.findById(orderId);
-        if (orderOpt.isEmpty()) {
-            throw new RuntimeException("Order not found with ID: " + orderId);
-        }
-        Order order = orderOpt.get();
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: " + orderId));
 
         // 查詢配送資訊
-        Shipping shipping = shippingRepo.findByOrderId(orderId);
+        Shipping shipping = shippingRepo.findByOrderId(orderId).orElse(null);
 
         // 查詢付款資訊
-        Payment payment = paymentRepo.findByOrderId(orderId);
+        Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
 
         // 組合為 OrderAnalysisDto
         OrderAnalysisDto orderAnalysisDto = new OrderAnalysisDto();
@@ -465,19 +506,12 @@ public class ManageOrderService {
         return orderAnalysisDto;
     }
 
-
+    // 查詢指定日期範圍內的所有訂單
     public List<OrderAnalysisDto> getOrdersAnalysisByDateRange(Date startDate, Date endDate) {
-        // 查詢指定日期範圍內的所有訂單
-        List<Order> orders = orderRepo.findOrdersByDateRange(startDate, endDate);
-
-        // 轉換為 DTO 列表
-        List<OrderAnalysisDto> orderAnalysisDtos = new ArrayList<>();
-        for (Order order : orders) {
-            OrderAnalysisDto orderAnalysisDto = getOrderAnalysisById(order.getId());
-            orderAnalysisDtos.add(orderAnalysisDto);
-        }
-
-        return orderAnalysisDtos;
+        return orderRepo.findOrdersByDateRange(startDate, endDate)
+                .stream()
+                .map(order -> getOrderAnalysisById(order.getId()))
+                .collect(Collectors.toList());
     }
 
     //=====orderItems=====
@@ -489,6 +523,7 @@ public class ManageOrderService {
         List<OrderItemAnalysisDto> orderItemAnalysisDtos = new ArrayList<>();
         for (OrderDetail orderDetail : orderDetails) {
             OrderItemAnalysisDto orderItemAnalysisDto = new OrderItemAnalysisDto();
+
             orderItemAnalysisDto.setOrderId(orderDetail.getOrder().getId());
             orderItemAnalysisDto.setProductId(orderDetail.getProduct().getId());
             orderItemAnalysisDto.setProductDetailId(

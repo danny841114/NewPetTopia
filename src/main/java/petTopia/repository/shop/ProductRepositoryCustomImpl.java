@@ -29,7 +29,7 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 
 	// 根據條件搜尋商品的總數
 	@Override
-	public long count(JSONObject obj) {
+	public Long count(JSONObject obj) {
 
 		String keywordStr = obj.isNull("keyword") ? null : obj.getString("keyword");
 		String category = obj.isNull("category") ? null : obj.getString("category");

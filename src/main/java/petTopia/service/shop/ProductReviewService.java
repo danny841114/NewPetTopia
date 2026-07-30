@@ -4,20 +4,19 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import petTopia.dto.shop.ProductReviewPhotoDto;
 import petTopia.dto.shop.ProductReviewResponseDto;
 import petTopia.dto.shop.request.CreateReviewRequest;
 import petTopia.dto.shop.request.UpdateReviewRequest;
+import petTopia.exception.custom.AlreadyReviewedException;
 import petTopia.model.shop.ProductReview;
 import petTopia.model.shop.ProductReviewPhoto;
 import petTopia.projection.shop.ProductDetailRatingProjection;
@@ -26,75 +25,19 @@ import petTopia.repository.shop.ProductRepository;
 import petTopia.repository.shop.ProductReviewPhotoRepository;
 import petTopia.repository.shop.ProductReviewRepository;
 import petTopia.repository.user.MemberRepository;
-import petTopia.util.ImageConverter;
 
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class ProductReviewService {
-
-    @Autowired
-    private ProductReviewRepository productReviewRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
-    private ProductReviewPhotoRepository productReviewPhotoRepository;
-
-    //判斷是否已評論過該商品的異常
-    public class AlreadyReviewedException extends RuntimeException {
-        private static final long serialVersionUID = 1L;
-
-        public AlreadyReviewedException(String message) {
-            super(message);
-        }
-    }
+    private final ProductReviewRepository productReviewRepository;
+    private final ProductRepository productRepository;
+    private final MemberRepository memberRepository;
+    private final ProductReviewPhotoRepository productReviewPhotoRepository;
 
     public Boolean hasReviewed(Integer productId, Integer memberId) {
         Optional<ProductReview> existingReview = productReviewRepository.findByProductIdAndMemberId(productId, memberId);
         return existingReview.isPresent();
-    }
-
-    // 將 ProductReview 轉換為 ProductReviewDTO
-    private ProductReviewResponseDto convertToDTO(ProductReview review) {
-        ProductReviewResponseDto reviewDTO = new ProductReviewResponseDto();
-
-        // 設定基本欄位
-        reviewDTO.setReviewId(review.getId());
-        reviewDTO.setMemberId(review.getMember().getId());
-        reviewDTO.setMemberName(review.getMember().getName());
-        reviewDTO.setProductId(review.getProduct().getId());
-        reviewDTO.setProductDetailId(review.getProduct().getProductDetail().getId());
-        reviewDTO.setProductName(review.getProduct().getProductDetail().getName());
-        reviewDTO.setProductColor(review.getProduct().getProductColor() != null ? review.getProduct().getProductColor().getName() : "無");
-        reviewDTO.setProductSize(review.getProduct().getProductSize() != null ? review.getProduct().getProductSize().getName() : "無");
-        reviewDTO.setProductPhoto(review.getProduct().getPhoto());
-        reviewDTO.setRating(review.getRating());
-        reviewDTO.setReviewDescription(review.getReviewDescription());
-        reviewDTO.setReviewTime(review.getReviewTime());
-
-        // 處理圖片為 Base64 格式
-        List<ProductReviewPhotoDto> productReviewPhotoList = review.getReviewPhotos().stream()
-                .map(photo -> {
-                    ProductReviewPhotoDto reviewPhotoDto = new ProductReviewPhotoDto();
-                    reviewPhotoDto.setReviewPhotoId(photo.getId());
-
-                    // 轉換每個圖片為 Base64 字符串
-                    String base64Image = ImageConverter.byteToBase64(photo.getReviewPhoto()); // 假设 ImageConverter.byteToBase64 处理的是单张图片
-
-                    // 將base64放到dto中
-                    reviewPhotoDto.setReviewPhotos(base64Image); // 直接设置为字符串，而不是列表
-
-                    return reviewPhotoDto;
-                })
-                .collect(Collectors.toList());
-
-        reviewDTO.setProductReviewPhoto(productReviewPhotoList);
-
-        return reviewDTO;
     }
 
     //===================會員評論==================
@@ -113,8 +56,10 @@ public class ProductReviewService {
 
         productReview.setProduct(productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found")));
+
         productReview.setMember(memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new EntityNotFoundException("Member not found")));
+
         productReview.setRating(request.getRating());
         productReview.setReviewDescription(request.getReviewDescription());
         productReview.setReviewTime(new Date());
@@ -142,10 +87,9 @@ public class ProductReviewService {
 
         Page<ProductReview> reviewsPage = productReviewRepository.findByMemberIdOrderByReviewTimeDesc(memberId, pageable);
 
-        reviewsPage.getContent()
-                .forEach(review -> review.getReviewPhotos().size()); // 強制 Hibernate 載入評論的圖片
+        reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size()); // 強制 Hibernate 載入評論的圖片
 
-        return reviewsPage.map(this::convertToDTO);
+        return reviewsPage.map(ProductReviewResponseDto::convertToDto);
     }
 
 
@@ -191,14 +135,26 @@ public class ProductReviewService {
 
     //===================商品評論===================
 
-    // 讀取所有評論（根據商品ID查詢）
-    public List<ProductReview> getReviewsByProductId(Integer productId) {
-        return productReviewRepository.findByProductId(productId);
-    }
-
     // 找某商品的平均評分
     public Double getAverageRatingByProductDetailId(Integer productDetailId) {
         return productReviewRepository.findAverageRatingByProductDetailId(productDetailId);
+    }
+
+    // 取得所有評論
+    public Page<ProductReviewResponseDto> getAllReviews(Integer page, Integer size, String sort) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+
+        String lowerCaseSort = sort.toLowerCase();
+
+        Page<ProductReview> reviewsPage = switch (lowerCaseSort) {
+            case "id" -> productReviewRepository.findAllReviewsByIdDesc(pageable);
+            case "rating" -> productReviewRepository.findAllReviewsByRatingDesc(pageable);
+            default -> productReviewRepository.findAllReviewsOrderByReviewTimeDesc(pageable);
+        };
+
+        reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size()); // 強制 Hibernate 載入評論的圖片
+
+        return reviewsPage.map(ProductReviewResponseDto::convertToDto);
     }
 
     // 找某商品的所有評論
@@ -213,43 +169,12 @@ public class ProductReviewService {
         reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size()); // 強制 Hibernate 載入評論的圖片
 
         // 將 ProductReview 轉換為 ProductReviewResponseDto
-        return reviewsPage.map(this::convertToDTO);
+        return reviewsPage.map(ProductReviewResponseDto::convertToDto);
     }
 
     //找某商品的總評論數
     public Integer getReviewsCountByProductDetailId(Integer productDetailId) {
         return productReviewRepository.countReviewsByProductDetailId(productDetailId);
-    }
-
-    // 取得所有評論，根據 reviewTime 降冪排序（含分頁）
-    public Page<ProductReviewResponseDto> getAllReviewsSortedByTime(int page, int size) {
-        // 設定分頁請求，頁數從 0 開始
-        Pageable pageable = PageRequest.of(page - 1, size);
-
-        // 查詢評論並使用分頁
-        Page<ProductReview> reviewsPage = productReviewRepository.findAllReviewsOrderByReviewTimeDesc(pageable);
-
-        // 確保每條評論的圖片都被載入
-        reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size()); // 強制 Hibernate 載入評論的圖片
-
-        // 將 ProductReview 轉換為 ProductReviewResponseDto
-        return reviewsPage.map(this::convertToDTO);
-    }
-
-    // 取得所有評論，根據 id 降冪排序（含分頁）
-    public Page<ProductReviewResponseDto> getAllReviewsSortedById(int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<ProductReview> reviewsPage = productReviewRepository.findAllReviewsByIdDesc(pageable);
-        reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size());
-        return reviewsPage.map(this::convertToDTO);
-    }
-
-    // 取得所有評論，根據 rating 降冪排序（含分頁）
-    public Page<ProductReviewResponseDto> getAllReviewsSortedByRating(int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<ProductReview> reviewsPage = productReviewRepository.findAllReviewsByRatingDesc(pageable);
-        reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size());
-        return reviewsPage.map(this::convertToDTO);
     }
 
     //模糊搜尋
@@ -263,7 +188,7 @@ public class ProductReviewService {
         reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size());
 
         // 轉換為 DTO
-        return reviewsPage.map(this::convertToDTO);
+        return reviewsPage.map(ProductReviewResponseDto::convertToDto);
     }
 
     // 根據評論ID找單個評論
@@ -274,10 +199,12 @@ public class ProductReviewService {
 
     // 刪除評論
     public void deleteReviewById(Integer reviewId) {
-        if (!productReviewRepository.existsById(reviewId)) {
-            throw new IllegalArgumentException("Review with ID " + reviewId + " not found.");
-        }
-        productReviewRepository.deleteById(reviewId);
+        productReviewRepository.findById(reviewId).ifPresentOrElse(
+                productReviewRepository::delete,
+                () -> {
+                    throw new EntityNotFoundException("Review not found");
+                }
+        );
     }
 
     //=================評分統計=======================
@@ -291,13 +218,5 @@ public class ProductReviewService {
     public List<ProductDetailRatingProjection> getTop3ProductDetailsByAverageRating() {
         Pageable top3Page = PageRequest.of(0, 3);
         return productReviewRepository.findTop3ProductDetailsByAverageRating(top3Page);
-    }
-
-    public Page<ProductReviewResponseDto> getAllReviews(Integer page, Integer size, String sortBy) {
-        return switch (sortBy.toLowerCase()) {
-            case "id" -> this.getAllReviewsSortedById(page, size);
-            case "rating" -> this.getAllReviewsSortedByRating(page, size);
-            default -> this.getAllReviewsSortedByTime(page, size);
-        };
     }
 }

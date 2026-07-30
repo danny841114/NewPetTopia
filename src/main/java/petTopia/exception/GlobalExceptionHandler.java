@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import petTopia.dto.exception.CustomErrorResponse;
+import petTopia.exception.custom.AlreadyReviewedException;
 
 import java.time.LocalDateTime;
 
@@ -88,6 +89,20 @@ public class GlobalExceptionHandler {
         CustomErrorResponse response = CustomErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .code("SYSTEM_ERROR")
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.internalServerError().body(response);
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<CustomErrorResponse> handleAlreadyReview(AlreadyReviewedException ex) {
+        log.error("ALREADY REVIEW", ex);
+
+        CustomErrorResponse response = CustomErrorResponse.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .code("ALREADY REVIEW")
                 .message(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();

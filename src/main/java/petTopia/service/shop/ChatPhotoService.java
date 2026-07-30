@@ -1,55 +1,37 @@
 package petTopia.service.shop;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.shop.ChatMessages;
 import petTopia.model.shop.ChatPhoto;
-import petTopia.repository.shop.ChatMessagesRepository;
 import petTopia.repository.shop.ChatPhotoRepository;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class ChatPhotoService {
+    private final ChatPhotoRepository chatPhotoRepository;
 
-	@Autowired
-    private ChatPhotoRepository chatPhotoRepository;
-	
-	// 獲取該訊息的所有圖片
-	public List<String> getChatPhotos(Integer chatMessagesId){
-		
-		List<String> photos = new ArrayList<>();
-		List<ChatPhoto> chatPhotos = chatPhotoRepository.findByChatMessagesId(chatMessagesId);
-		if (chatPhotos != null || chatPhotos.size() != 0) {
-			for (ChatPhoto chatPhoto : chatPhotos) {
-				photos.add(chatPhoto.getPhoto());
-			}
-		}
-		else {
-			photos = null;
-		}
-		
-		return photos;
-		
-	}
-		
-	// 儲存聊天訊息的圖片
-	public Boolean savePhoto(ChatMessages chatMessages, String photo) {
-		
-		ChatPhoto chatPhoto = new ChatPhoto();
-		
-		chatPhoto.setChatMessages(chatMessages);
-		chatPhoto.setPhoto(photo);
-		
-		ChatPhoto save = chatPhotoRepository.save(chatPhoto);
-	    
-		if (save != null)
-			return true;
-		
-		return false;
-		
-	}
-	
+    // 獲取該訊息的所有圖片
+    public List<String> getChatPhotos(Integer chatMessagesId) {
+        return chatPhotoRepository.findByChatMessagesId(chatMessagesId)
+                .stream()
+                .map(ChatPhoto::getPhoto)
+                .collect(Collectors.toList());
+    }
+
+    // 儲存聊天訊息的圖片
+    @Transactional
+    public ChatPhoto savePhoto(ChatMessages chatMessages, String photo) {
+        ChatPhoto chatPhoto = new ChatPhoto();
+
+        chatPhoto.setChatMessages(chatMessages);
+        chatPhoto.setPhoto(photo);
+
+        return chatPhotoRepository.save(chatPhoto);
+    }
 }

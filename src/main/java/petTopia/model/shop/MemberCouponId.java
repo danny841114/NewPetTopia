@@ -1,5 +1,6 @@
 package petTopia.model.shop;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 import jakarta.persistence.Embeddable;
@@ -14,9 +15,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @Embeddable
 public class MemberCouponId implements Serializable {
-    
-	private static final long serialVersionUID = 1L;
-	private Integer memberId;
-    private Integer couponId;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
+    private Integer memberId;
+    private Integer couponId;
 }

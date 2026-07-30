@@ -1,28 +1,21 @@
 package petTopia.service.shop;
 
 import java.math.BigDecimal;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
-
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.shop.PaymentInfoDto;
 import petTopia.dto.shop.PaymentResponseDto;
 import petTopia.model.shop.Order;
 import petTopia.model.shop.OrderDetail;
 import petTopia.model.shop.Payment;
 import petTopia.model.shop.PaymentCategory;
-import petTopia.model.shop.PaymentStatus;
 import petTopia.repository.shop.OrderDetailRepository;
 import petTopia.repository.shop.OrderRepository;
 import petTopia.repository.shop.OrderStatusRepository;
@@ -31,74 +24,64 @@ import petTopia.repository.shop.PaymentRepository;
 import petTopia.repository.shop.PaymentStatusRepository;
 import petTopia.util.EcpayUtils; // 引入 EcpayUtils
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class PaymentService {
-	
-	private final String merchantId = "3002607";
+    private static final String merchantId = "3002607";
 
-    @Autowired
-    private PaymentRepository paymentRepo;
-    
-    @Autowired
-    private PaymentStatusRepository paymentStatusRepo;
+    private final PaymentRepository paymentRepo;
+    private final PaymentStatusRepository paymentStatusRepo;
+    private final PaymentCategoryRepository paymentCategoryRepo;
+    private final OrderRepository orderRepo;
+    private final OrderDetailRepository orderDetailRepo;
+    private final OrderStatusRepository orderStatusRepo;
+    private final EcpayUtils ecpayUtils;
 
-    @Autowired
-    private PaymentCategoryRepository paymentCategoryRepo;
-    
-    @Autowired
-    private OrderRepository orderRepo;
-    
-    @Autowired
-    private OrderDetailRepository orderDetailRepo;
-    
-    @Autowired
-    private OrderStatusRepository orderStatusRepo;
-    
-    @Autowired
-    private EcpayUtils ecpayUtils; // 引入 EcpayUtils
-
-	public PaymentInfoDto getPaymentInfoDto(Order order) {
+    public PaymentInfoDto getPaymentInfoDto(Order order) {
         PaymentInfoDto paymentInfoDto = new PaymentInfoDto();
+
         paymentInfoDto.setPaymentAmount(order.getPayment().getPaymentAmount());
         paymentInfoDto.setPaymentCategory(order.getPayment().getPaymentCategory().getName());
         paymentInfoDto.setPaymentStatus(order.getPayment().getPaymentStatus().getName());
+
         return paymentInfoDto;
     }
-    
+
     // 新建信用卡支付
+    @Transactional
     public boolean createCreditCardPayment(Order order, PaymentCategory paymentCategory) {
         Payment payment = new Payment();
+
         payment.setOrder(order);
         payment.setPaymentCategory(paymentCategory);
         payment.setPaymentDate(null);
         payment.setUpdatedDate(new Date());
 
         // 設置為 "待付款"（ID = 1）
-        setPaymentStatus(payment, 1); 
+        setPaymentStatus(payment, 1);
 
         try {
             paymentRepo.save(payment);
-            return true;  // 如果成功保存，回傳 true
+            return true;
         } catch (Exception e) {
-            return false; // 如果發生錯誤，回傳 false
+            return false;
         }
     }
-	
-    //訂單建立後為待處理(1)，先從訂單資訊取得ECpay需要的參數
+
+    //訂單建立後為待處理(1)，先從訂單資訊取得EC pay需要的參數
     @Transactional
     public PaymentResponseDto processCreditCardPayment(Order order, Integer paymentCategoryId) throws Exception {
         // 檢查是否為 paymentCategoryId == 1
-        if (paymentCategoryId != 1) {
-            throw new IllegalArgumentException("只有信用卡付款才可執行該方法");
-        }
+        if (paymentCategoryId != 1) throw new IllegalArgumentException("只有信用卡付款才可執行該方法");
 
-        // 根據訂單資訊產生ECpay需要的參數
+        // 根據訂單資訊產生EC pay需要的參數
         List<OrderDetail> orderDetails = orderDetailRepo.findByOrderId(order.getId());
 
         // 合併所有商品名稱
         StringBuilder itemNameBuilder = new StringBuilder();
         for (OrderDetail orderDetail : orderDetails) {
-            if (itemNameBuilder.length() > 0) {
+            if (!itemNameBuilder.isEmpty()) {
                 itemNameBuilder.append("#");
             }
             itemNameBuilder.append(orderDetail.getProduct().getProductDetail().getName());
@@ -109,6 +92,7 @@ public class PaymentService {
 
         // 創建 PaymentResponseDto 並設置值
         PaymentResponseDto paymentResponse = new PaymentResponseDto();
+
         paymentResponse.setMerchantId(merchantId);
         paymentResponse.setMerchantTradeNo(new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + "P" + order.getId());
         paymentResponse.setMerchantTradeDate(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date()));
@@ -131,8 +115,9 @@ public class PaymentService {
         return paymentResponse;
     }
 
-    //告訴ECpay我有收到他回傳的狀態資料，並且核對檢查碼
-    public String handleEcpayCallback(Map<String, String> callbackParams) throws Exception {
+    //告訴EC pay我有收到他回傳的狀態資料，並且核對檢查碼
+    @Transactional
+    public String handleEcPayCallback(Map<String, String> callbackParams) throws Exception {
         // 1. 檢查 CheckMacValue，確保回調數據有效
         if (!ecpayUtils.isValidCheckValue(callbackParams)) {
             return "0|Error: Invalid CheckMacValue"; // 格式符合 ECPay 要求
@@ -149,7 +134,7 @@ public class PaymentService {
         String[] parts = merchantTradeNo.split("P");
         Integer orderId = null;
         if (parts.length == 2) {
-            String orderIdStr = parts[1]; 
+            String orderIdStr = parts[1];
             orderId = Integer.valueOf(orderIdStr);
         } else {
             throw new IllegalArgumentException("merchantTradeNo 格式錯誤，無法擷取訂單 ID");
@@ -159,10 +144,10 @@ public class PaymentService {
 
         // 4. 查找訂單
         Order order = orderRepo.findById(orderId)
-            .orElseThrow(() -> new IllegalArgumentException("找不到訂單"));
+                .orElseThrow(() -> new EntityNotFoundException("找不到訂單"));
 
         // 5. 設定付款資訊
-        Payment payment = order.getPayment(); 
+        Payment payment = order.getPayment();
         payment.setTradeNo(tradeNo);
 
         // 6. 解析付款日期
@@ -176,17 +161,19 @@ public class PaymentService {
             setPaymentStatus(payment, 2); // 設定為已付款
             payment.setPaymentAmount(paymentAmount);
             order.setOrderStatus(orderStatusRepo.findById(2)
-                .orElseThrow(() -> new IllegalArgumentException("找不到待出貨狀態")));
+                    .orElseThrow(() -> new IllegalArgumentException("找不到待出貨狀態")));
             orderRepo.save(order);
         } else { // 付款失敗
             setPaymentStatus(payment, 3); // 設定為付款失敗
             payment.setPaymentAmount(null);
         }
-  
+
         // 8. 設定 PaymentCategory
         paymentCategoryRepo.findById(1).ifPresentOrElse(
-            payment::setPaymentCategory,
-            () -> { throw new IllegalArgumentException("PaymentCategory not found"); }
+                payment::setPaymentCategory,
+                () -> {
+                    throw new EntityNotFoundException("PaymentCategory not found");
+                }
         );
 
         // 9. 儲存付款資訊
@@ -197,8 +184,10 @@ public class PaymentService {
     }
 
     // 處理貨到付款支付
+    @Transactional
     public boolean createCashOnDeliveryPayment(Order order, PaymentCategory paymentCategory) {
         Payment payment = new Payment();
+
         payment.setOrder(order);
         payment.setPaymentCategory(paymentCategory);
         payment.setPaymentDate(new Date());
@@ -209,15 +198,15 @@ public class PaymentService {
 
         try {
             paymentRepo.save(payment);
-            return true;  // 如果成功保存，回傳 true
+            return true;
         } catch (Exception e) {
-            return false; // 如果發生錯誤，回傳 false
+            return false;
         }
     }
 
     // 將設置支付狀態的邏輯提取成一個方法
     private void setPaymentStatus(Payment payment, int statusId) {
-        Optional<PaymentStatus> paymentStatus = paymentStatusRepo.findById(statusId);
-        paymentStatus.ifPresent(payment::setPaymentStatus); // 只有當 paymentStatus 存在時才設置
+        paymentStatusRepo.findById(statusId)
+                .ifPresent(payment::setPaymentStatus);
     }
 }
