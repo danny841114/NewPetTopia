@@ -1,8 +1,5 @@
 package petTopia.controller.shop;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
@@ -15,7 +12,6 @@ import petTopia.dto.shop.request.ConfirmProductRequest;
 import petTopia.dto.shop.request.OptionProductRequest;
 import petTopia.dto.shop.response.ProductDetailResponse;
 import petTopia.model.shop.Cart;
-import petTopia.model.shop.Product;
 import petTopia.service.shop.CartService;
 import petTopia.service.shop.ProductService;
 

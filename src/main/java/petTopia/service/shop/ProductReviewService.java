@@ -6,19 +6,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
 import petTopia.dto.shop.ProductReviewPhotoDto;
 import petTopia.dto.shop.ProductReviewResponseDto;
-import petTopia.model.shop.Product;
-import petTopia.model.shop.ProductDetail;
+import petTopia.dto.shop.request.CreateReviewRequest;
+import petTopia.dto.shop.request.UpdateReviewRequest;
 import petTopia.model.shop.ProductReview;
 import petTopia.model.shop.ProductReviewPhoto;
 import petTopia.projection.shop.ProductDetailRatingProjection;
@@ -29,6 +28,7 @@ import petTopia.repository.shop.ProductReviewRepository;
 import petTopia.repository.user.MemberRepository;
 import petTopia.util.ImageConverter;
 
+@Transactional(readOnly = true)
 @Service
 public class ProductReviewService {
 
@@ -53,7 +53,7 @@ public class ProductReviewService {
         }
     }
 
-    public boolean hasReviewed(Integer productId, Integer memberId) {
+    public Boolean hasReviewed(Integer productId, Integer memberId) {
         Optional<ProductReview> existingReview = productReviewRepository.findByProductIdAndMemberId(productId, memberId);
         return existingReview.isPresent();
     }
@@ -98,36 +98,37 @@ public class ProductReviewService {
     }
 
     //===================會員評論==================
+
     // 新增評論
-    public ProductReview createReview(ProductReview productReview, Integer productId, Integer memberId, List<MultipartFile> reviewPhotos) throws IOException {
-        // 檢查會員是否已經對該商品評論過
+    @Transactional
+    public ProductReview createReview(Integer productId, CreateReviewRequest request) throws IOException {
         Optional<ProductReview> existingReview = productReviewRepository.findByProductIdAndMemberId(
-                productId, memberId
+                productId,
+                request.getMemberId()
         );
 
-        if (existingReview.isPresent()) {
-            // 拋出自定義的異常
-            throw new AlreadyReviewedException("您已經評論過該商品");
-        }
+        if (existingReview.isPresent()) throw new AlreadyReviewedException("您已經評論過該商品");
 
-        // 設定商品與會員
+        ProductReview productReview = new ProductReview();
+
         productReview.setProduct(productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found")));
-        productReview.setMember(memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("Member not found")));
-
-        productReview.setRating(productReview.getRating());
-        productReview.setReviewDescription(productReview.getReviewDescription());
+                .orElseThrow(() -> new EntityNotFoundException("Product not found")));
+        productReview.setMember(memberRepository.findById(request.getMemberId())
+                .orElseThrow(() -> new EntityNotFoundException("Member not found")));
+        productReview.setRating(request.getRating());
+        productReview.setReviewDescription(request.getReviewDescription());
         productReview.setReviewTime(new Date());
-        // 儲存評論
+
         ProductReview savedReview = productReviewRepository.save(productReview);
 
-        // 處理圖片
+        List<MultipartFile> reviewPhotos = request.getReviewPhotos();
         if (reviewPhotos != null && !reviewPhotos.isEmpty()) {
-            for (int i = 0; i < reviewPhotos.size() && i < 5; i++) {  // 限制最多5張圖片
+            for (int i = 0; i < reviewPhotos.size() && i < 5; i++) {
                 ProductReviewPhoto reviewPhoto = new ProductReviewPhoto();
+
                 reviewPhoto.setProductReview(savedReview);
                 reviewPhoto.setReviewPhoto(reviewPhotos.get(i).getBytes());
+
                 productReviewPhotoRepository.save(reviewPhoto);
             }
         }
@@ -136,53 +137,52 @@ public class ProductReviewService {
     }
 
     // 根據 memberId 查找所有評論，並確保載入評論的圖片
-    public Page<ProductReviewResponseDto> getReviewsByMemberId(Integer memberId, int page, int size) {
-        // 設定分頁請求，根據 reviewTime 降冪排序
+    public Page<ProductReviewResponseDto> getReviewsByMemberId(Integer memberId, Integer page, Integer size) {
         Pageable pageable = PageRequest.of(page - 1, size);  // 頁數從0開始
 
-        // 查詢會員的評論，並使用分頁
         Page<ProductReview> reviewsPage = productReviewRepository.findByMemberIdOrderByReviewTimeDesc(memberId, pageable);
 
-        // 確保每條評論的圖片都被載入
-        reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size()); // 強制 Hibernate 載入評論的圖片
+        reviewsPage.getContent()
+                .forEach(review -> review.getReviewPhotos().size()); // 強制 Hibernate 載入評論的圖片
 
-        // 將 ProductReview 轉換為 ProductReviewResponseDto
         return reviewsPage.map(this::convertToDTO);
     }
 
 
     // 修改單一評論
-    public boolean updateReview(Integer reviewId, Integer rating, String reviewDescription, List<MultipartFile> newPhotos, List<Integer> deletePhotoIds) throws IOException {
+    @Transactional
+    public Boolean updateReview(Integer reviewId, UpdateReviewRequest request) throws IOException {
         Optional<ProductReview> optionalReview = productReviewRepository.findById(reviewId);
 
         if (optionalReview.isPresent()) {
             ProductReview review = optionalReview.get();
 
-            if (rating != null) {
-                review.setRating(rating);
+            if (request.getRating() != null) {
+                review.setRating(request.getRating());
             }
 
-            if (reviewDescription != null) {
-                review.setReviewDescription(reviewDescription);
+            if (request.getReviewDescription() != null) {
+                review.setReviewDescription(request.getReviewDescription());
             }
 
-            if (deletePhotoIds != null && !deletePhotoIds.isEmpty()) {
-                productReviewPhotoRepository.deleteByIdIn(deletePhotoIds);
+            if (request.getDeletePhotoIds() != null && !request.getDeletePhotoIds().isEmpty()) {
+                productReviewPhotoRepository.deleteByIdIn(request.getDeletePhotoIds());
             }
 
-
-            // **新增新圖片**
+            List<MultipartFile> newPhotos = request.getNewPhotos();
             if (newPhotos != null && !newPhotos.isEmpty()) {
-                for (int i = 0; i < newPhotos.size() && i < 5; i++) {  // 限制最多5張圖片
+                for (int i = 0; i < newPhotos.size() && i < 5; i++) {
                     ProductReviewPhoto reviewPhoto = new ProductReviewPhoto();
+
                     reviewPhoto.setProductReview(review);
                     reviewPhoto.setReviewPhoto(newPhotos.get(i).getBytes());
+
                     productReviewPhotoRepository.save(reviewPhoto);
                 }
             }
 
-            // 儲存更新
             productReviewRepository.save(review);
+
             return true;
         }
 

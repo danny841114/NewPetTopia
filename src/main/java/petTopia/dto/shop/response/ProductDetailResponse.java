@@ -1,5 +1,6 @@
 package petTopia.dto.shop.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import petTopia.model.shop.Product;
 import petTopia.model.shop.ProductColor;
@@ -13,6 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductDetailResponse {
     private List<Product> productList;
     private List<ProductSize> sizeList;
