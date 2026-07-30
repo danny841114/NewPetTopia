@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import petTopia.dto.shop.ProductReviewPhotoDto;
@@ -33,13 +34,13 @@ public class ProductReviewService {
 
     @Autowired
     private ProductReviewRepository productReviewRepository;
-    
+
     @Autowired
     private ProductRepository productRepository;
-    
+
     @Autowired
     private MemberRepository memberRepository;
-    
+
     @Autowired
     private ProductReviewPhotoRepository productReviewPhotoRepository;
 
@@ -47,20 +48,20 @@ public class ProductReviewService {
     public class AlreadyReviewedException extends RuntimeException {
         private static final long serialVersionUID = 1L;
 
-		public AlreadyReviewedException(String message) {
+        public AlreadyReviewedException(String message) {
             super(message);
         }
     }
-    
+
     public boolean hasReviewed(Integer productId, Integer memberId) {
         Optional<ProductReview> existingReview = productReviewRepository.findByProductIdAndMemberId(productId, memberId);
         return existingReview.isPresent();
     }
-    
+
     // 將 ProductReview 轉換為 ProductReviewDTO
     private ProductReviewResponseDto convertToDTO(ProductReview review) {
-    	ProductReviewResponseDto reviewDTO = new ProductReviewResponseDto();
-        
+        ProductReviewResponseDto reviewDTO = new ProductReviewResponseDto();
+
         // 設定基本欄位
         reviewDTO.setReviewId(review.getId());
         reviewDTO.setMemberId(review.getMember().getId());
@@ -92,23 +93,23 @@ public class ProductReviewService {
                 .collect(Collectors.toList());
 
         reviewDTO.setProductReviewPhoto(productReviewPhotoList);
-        
+
         return reviewDTO;
     }
-    
+
     //===================會員評論==================
     // 新增評論
-    public ProductReview createReview(ProductReview productReview,Integer productId,Integer memberId, List<MultipartFile> reviewPhotos) throws IOException {
+    public ProductReview createReview(ProductReview productReview, Integer productId, Integer memberId, List<MultipartFile> reviewPhotos) throws IOException {
         // 檢查會員是否已經對該商品評論過
         Optional<ProductReview> existingReview = productReviewRepository.findByProductIdAndMemberId(
-        		productId, memberId
+                productId, memberId
         );
-        
+
         if (existingReview.isPresent()) {
             // 拋出自定義的異常
             throw new AlreadyReviewedException("您已經評論過該商品");
         }
-        
+
         // 設定商品與會員
         productReview.setProduct(productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found")));
@@ -133,15 +134,15 @@ public class ProductReviewService {
 
         return savedReview;
     }
-    
+
     // 根據 memberId 查找所有評論，並確保載入評論的圖片
     public Page<ProductReviewResponseDto> getReviewsByMemberId(Integer memberId, int page, int size) {
         // 設定分頁請求，根據 reviewTime 降冪排序
         Pageable pageable = PageRequest.of(page - 1, size);  // 頁數從0開始
-        
+
         // 查詢會員的評論，並使用分頁
         Page<ProductReview> reviewsPage = productReviewRepository.findByMemberIdOrderByReviewTimeDesc(memberId, pageable);
-        
+
         // 確保每條評論的圖片都被載入
         reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size()); // 強制 Hibernate 載入評論的圖片
 
@@ -151,25 +152,25 @@ public class ProductReviewService {
 
 
     // 修改單一評論
-    public boolean updateReview(Integer reviewId, Integer rating, String reviewDescription, List<MultipartFile> newPhotos,List<Integer> deletePhotoIds) throws IOException {
+    public boolean updateReview(Integer reviewId, Integer rating, String reviewDescription, List<MultipartFile> newPhotos, List<Integer> deletePhotoIds) throws IOException {
         Optional<ProductReview> optionalReview = productReviewRepository.findById(reviewId);
-        
+
         if (optionalReview.isPresent()) {
             ProductReview review = optionalReview.get();
-            
-            if(rating!=null) {
-            	review.setRating(rating);
+
+            if (rating != null) {
+                review.setRating(rating);
             }
-            
-            if(reviewDescription!=null) {
-            	review.setReviewDescription(reviewDescription);
+
+            if (reviewDescription != null) {
+                review.setReviewDescription(reviewDescription);
             }
 
             if (deletePhotoIds != null && !deletePhotoIds.isEmpty()) {
                 productReviewPhotoRepository.deleteByIdIn(deletePhotoIds);
             }
 
-            
+
             // **新增新圖片**
             if (newPhotos != null && !newPhotos.isEmpty()) {
                 for (int i = 0; i < newPhotos.size() && i < 5; i++) {  // 限制最多5張圖片
@@ -184,17 +185,17 @@ public class ProductReviewService {
             productReviewRepository.save(review);
             return true;
         }
-        
+
         return false;
     }
-    
+
     //===================商品評論===================
-    
+
     // 讀取所有評論（根據商品ID查詢）
     public List<ProductReview> getReviewsByProductId(Integer productId) {
         return productReviewRepository.findByProductId(productId);
     }
-    
+
     // 找某商品的平均評分
     public Double getAverageRatingByProductDetailId(Integer productDetailId) {
         return productReviewRepository.findAverageRatingByProductDetailId(productDetailId);
@@ -204,7 +205,7 @@ public class ProductReviewService {
     public Page<ProductReviewResponseDto> getReviewsByProductDetailId(Integer productDetailId, int page, int size) {
         // 設定分頁請求，根據 reviewTime 降冪排序
         Pageable pageable = PageRequest.of(page - 1, size);  // 頁數從0開始
-        
+
         // 查詢該商品的所有評論，並使用分頁
         Page<ProductReview> reviewsPage = productReviewRepository.findAllReviewsByProductDetailIdOrderByReviewTimeDesc(productDetailId, pageable);
 
@@ -214,13 +215,13 @@ public class ProductReviewService {
         // 將 ProductReview 轉換為 ProductReviewResponseDto
         return reviewsPage.map(this::convertToDTO);
     }
-    
+
     //找某商品的總評論數
     public Integer getReviewsCountByProductDetailId(Integer productDetailId) {
         return productReviewRepository.countReviewsByProductDetailId(productDetailId);
     }
-    
- // 取得所有評論，根據 reviewTime 降冪排序（含分頁）
+
+    // 取得所有評論，根據 reviewTime 降冪排序（含分頁）
     public Page<ProductReviewResponseDto> getAllReviewsSortedByTime(int page, int size) {
         // 設定分頁請求，頁數從 0 開始
         Pageable pageable = PageRequest.of(page - 1, size);
@@ -250,11 +251,11 @@ public class ProductReviewService {
         reviewsPage.getContent().forEach(review -> review.getReviewPhotos().size());
         return reviewsPage.map(this::convertToDTO);
     }
-    
+
     //模糊搜尋
     public Page<ProductReviewResponseDto> searchReviews(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        
+
         // 執行模糊搜尋
         Page<ProductReview> reviewsPage = productReviewRepository.searchReviews(keyword, pageable);
 
@@ -282,13 +283,21 @@ public class ProductReviewService {
     //=================評分統計=======================
     //評分最高商品
     public List<ProductRatingProjection> getTop5ProductsByAverageRating() {
-    	Pageable top5Page = PageRequest.of(0, 3);
+        Pageable top5Page = PageRequest.of(0, 3);
         return productReviewRepository.findTop5ProductsByAverageRating(top5Page);
     }
 
     //評分最高商品種類
     public List<ProductDetailRatingProjection> getTop3ProductDetailsByAverageRating() {
-    	Pageable top3Page = PageRequest.of(0, 3);
-    	return productReviewRepository.findTop3ProductDetailsByAverageRating(top3Page);
+        Pageable top3Page = PageRequest.of(0, 3);
+        return productReviewRepository.findTop3ProductDetailsByAverageRating(top3Page);
+    }
+
+    public Page<ProductReviewResponseDto> getAllReviews(Integer page, Integer size, String sortBy) {
+        return switch (sortBy.toLowerCase()) {
+            case "id" -> this.getAllReviewsSortedById(page, size);
+            case "rating" -> this.getAllReviewsSortedByRating(page, size);
+            default -> this.getAllReviewsSortedByTime(page, size);
+        };
     }
 }

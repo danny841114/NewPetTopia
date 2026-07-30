@@ -68,13 +68,13 @@ public class CheckOutController {
     // TODO: Use @PathVariable
     @GetMapping("/member")
     public ResponseEntity<Object> getMemberInfo(@RequestParam Integer memberId) {
-        Member member = memberService.findById(memberId);
+        Member member = memberService.getMemberById(memberId);
         return ResponseEntity.ok(member);
     }
 
     @GetMapping("/shipping/address")
     public ResponseEntity<Object> getShippingAddress(@RequestParam Integer memberId) {
-        Member member = memberService.findById(memberId);
+        Member member = memberService.getMemberById(memberId);
 
         ShippingAddress lastShippingAddress = shippingAddressRepo.findByMemberAndIsCurrent(member, true);
         if (lastShippingAddress == null) {
@@ -107,7 +107,7 @@ public class CheckOutController {
     // TODO: get memberId by credential
     @PostMapping("/checkout")
     public ResponseEntity<?> processCheckout(@RequestBody ProcessCheckout checkoutData, @RequestParam Integer memberId) {
-        Member member = memberService.findById(memberId);
+        Member member = memberService.getMemberById(memberId);
 
         // 從 checkoutData 取得各種資料
         try {

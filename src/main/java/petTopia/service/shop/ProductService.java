@@ -7,13 +7,14 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import petTopia.dto.shop.ProductDto;
 import petTopia.dto.shop.ProductDto2;
+import petTopia.dto.shop.request.OptionProductRequest;
 import petTopia.dto.shop.request.ShopProductsRequest;
+import petTopia.dto.shop.response.ProductDetailResponse;
 import petTopia.dto.shop.response.ShopProductsResponse;
 import petTopia.model.shop.Cart;
 import petTopia.model.shop.Product;
@@ -42,30 +43,100 @@ public class ProductService {
         return productRepository.findById(productId).orElse(null);
     }
 
+    // TODO: Use JPQL
     public byte[] getPhotoByProductId(Integer productId) {
         return productRepository.findById(productId)
                 .map(Product::getPhoto)
                 .orElse(null);
     }
 
-    // 獲取有上架的商品
     public List<Product> getAvailableProductByProductDetailId(Integer productDetailId, Boolean status) {
-        List<Product> productList = productRepository.findByProductDetailIdAndStatus(productDetailId, status);
-        return productList.isEmpty() ? null : productList;
+        return productRepository.findByProductDetailIdAndStatus(productDetailId, status);
     }
 
-    public List<Product> findByProductDetailIdAndSizeId(Integer productDetailId, Integer productSizeId) {
-        List<Product> productList = productRepository.findByProductDetailIdAndProductSizeId(productDetailId, productSizeId);
-        return productList.isEmpty() ? null : productList;
+    public ProductDetailResponse getAvailableProductsByDetailId(Integer productDetailId) {
+        List<Product> products = productRepository.findByProductDetailIdAndStatus(productDetailId, true);
+
+        Integer totalStockQuantity = 0;
+
+        for (Product product : products) {
+            totalStockQuantity += product.getStockQuantity();
+        }
+
+        Product minPriceProduct = getMinPriceProduct(products);
+        Product maxPriceProduct = getMaxPriceProduct(products);
+
+        return ProductDetailResponse.builder()
+                .productList(products)
+                .minPriceProduct(minPriceProduct)
+                .maxPriceProduct(maxPriceProduct)
+                .totalStockQuantity(totalStockQuantity)
+                .build();
     }
 
-    public List<Product> findByProductDetailIdAndColorId(Integer productDetailId, Integer productColorId) {
-        List<Product> productList = productRepository.findByProductDetailIdAndProductColorId(productDetailId, productColorId);
-        return productList.isEmpty() ? null : productList;
+    public ProductDetailResponse getAvailableProducts(Integer productDetailId) {
+        ProductDetail productDetail = productDetailRepository.findById(productDetailId).orElse(null);
+
+        List<Product> products = productRepository.findByProductDetailIdAndStatus(productDetailId, true);
+
+        List<ProductSize> productSizes = new ArrayList<>();
+        List<ProductColor> productColors = new ArrayList<>();
+
+        Integer totalStockQuantity = 0;
+
+        for (Product product : products) {
+            if (product.getProductSize() != null && !productSizes.contains(product.getProductSize())) {
+                productSizes.add(product.getProductSize());
+            }
+
+            if (product.getProductColor() != null && !productColors.contains(product.getProductColor())) {
+                productColors.add(product.getProductColor());
+            }
+
+            totalStockQuantity += product.getStockQuantity();
+        }
+
+        productSizes.sort(Comparator.comparingInt(ProductSize::getId));
+        productColors.sort(Comparator.comparingInt(ProductColor::getId));
+
+        Product minPriceProduct = getMinPriceProduct(products);
+        Product maxPriceProduct = getMaxPriceProduct(products);
+
+        return ProductDetailResponse.builder()
+                .productList(products)
+                .sizeList(productSizes)
+                .colorList(productColors)
+                .minPriceProduct(minPriceProduct)
+                .maxPriceProduct(maxPriceProduct)
+                .productDetail(productDetail)
+                .totalStockQuantity(totalStockQuantity)
+                .build();
     }
 
-    public Product getConfirmProduct(Integer productDetailId, Integer productSizeId, Integer productColorId) {
-        return productRepository.findByProductDetailIdAndProductSizeIdAndProductColorId(productDetailId, productSizeId, productColorId);
+    public ProductDetailResponse getProductsByOption(OptionProductRequest request) {
+        List<Product> products = new ArrayList<>();
+
+        if ("size".equals(request.getOptionName())) {
+            products = productRepository.findByProductDetailIdAndProductSizeId(request.getProductDetailId(), request.getOptionId());
+        } else if ("color".equals(request.getOptionName())) {
+            products = productRepository.findByProductDetailIdAndProductColorId(request.getProductDetailId(), request.getOptionId());
+        }
+
+        Integer totalStockQuantity = 0;
+
+        for (Product product : products) {
+            totalStockQuantity += product.getStockQuantity();
+        }
+
+        Product minPriceProduct = getMinPriceProduct(products);
+        Product maxPriceProduct = getMaxPriceProduct(products);
+
+        return ProductDetailResponse.builder()
+                .productList(products)
+                .minPriceProduct(minPriceProduct)
+                .maxPriceProduct(maxPriceProduct)
+                .totalStockQuantity(totalStockQuantity)
+                .build();
     }
 
     public Product findFirstByProductDetailId(Integer productDetailId) {
@@ -73,22 +144,27 @@ public class ProductService {
     }
 
     // 批量更新狀態
-    public List<Product> updateProductsStatus(List<Integer> productIds, String batchStatus) {
+    @Transactional
+    public Map<String, Object> updateProductsStatus(List<Integer> productIds, String batchStatus) {
         batchStatus = batchStatus != null ? batchStatus : "";
+        boolean setBatchStatus = "1".equals(batchStatus);
 
         List<Product> productList = productRepository.findAllByIdIn(productIds);
 
         for (Product product : productList) {
-            boolean setBatchStatus = "1".equals(batchStatus);
             product.setStatus(setBatchStatus);
-
-            productRepository.save(product);
         }
 
-        return productList;
+        List<Product> modifiedProducts = productRepository.saveAll(productList);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("productList", modifiedProducts);
+
+        return response;
     }
 
     // 新增商品
+    @Transactional
     public Map<String, Object> insertProduct(ProductDto productDto, MultipartFile photo) {
         try {
             productDto.setPhoto(photo.getBytes());
@@ -182,6 +258,7 @@ public class ProductService {
     }
 
     // 修改商品
+    @Transactional
     public Map<String, Object> modifyProduct(ProductDto2 productDto, MultipartFile photo) {
         Map<String, Object> response = new HashMap<>();
 
@@ -236,6 +313,7 @@ public class ProductService {
     }
 
     // 刪除商品
+    @Transactional
     public Map<String, Object> deleteProduct(Integer productId) {
         Map<String, Object> response = new HashMap<>();
 
@@ -254,6 +332,7 @@ public class ProductService {
     }
 
     // 更新庫存數量
+    @Transactional
     public void updateStockLevelsByCartItems(List<Cart> cartItems) {
         for (Cart cart : cartItems) {
             // 呼叫 lockProduct 方法，自動加鎖
@@ -310,5 +389,27 @@ public class ProductService {
                 .count(count)
                 .productList(products)
                 .build();
+    }
+
+    private Product getMaxPriceProduct(List<Product> products) {
+        return products.stream()
+                .max(Comparator.comparing(
+                        p -> p.getDiscountPrice() != null
+                                ? p.getUnitPrice().min(p.getDiscountPrice())
+                                : p.getUnitPrice(),
+                        Comparator.naturalOrder()
+                ))
+                .orElse(null);
+    }
+
+    private Product getMinPriceProduct(List<Product> products) {
+        return products.stream()
+                .min(Comparator.comparing(
+                        p -> p.getDiscountPrice() != null
+                                ? p.getUnitPrice().min(p.getDiscountPrice())
+                                : p.getUnitPrice(),
+                        Comparator.naturalOrder()
+                ))
+                .orElse(null);
     }
 }

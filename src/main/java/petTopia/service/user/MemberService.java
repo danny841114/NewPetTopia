@@ -1,14 +1,13 @@
 package petTopia.service.user;
 
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.model.user.Member;
 import petTopia.model.user.User;
 import petTopia.repository.user.MemberRepository;
@@ -55,15 +54,8 @@ public class MemberService {
         }
     }
 
-    // TODO: Same method
-    public Member getMemberById(Integer userId) {
-        return memberRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
-    }
-
-    // TODO: Same method
-    public Member findById(Integer userId) {
-        return memberRepository.findById(userId)
+    public Member getMemberById(Integer memberId) {
+        return memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
     }
 

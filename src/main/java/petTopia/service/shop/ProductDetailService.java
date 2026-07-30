@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import petTopia.dto.shop.response.ProductDetailResponse;
+import petTopia.dto.shop.response.ProductDetailDescription;
 import petTopia.model.shop.ProductDetail;
 import petTopia.repository.shop.ProductDetailRepository;
 
@@ -56,10 +56,10 @@ public class ProductDetailService {
         return productDetailList.isEmpty() ? null : productDetailList;
     }
 
-    public ProductDetailResponse findByProductDetailName(String productDetailName) {
+    public ProductDetailDescription findByProductDetailName(String productDetailName) {
         ProductDetail productDetail = productDetailRepository.findByName(productDetailName);
         String description = productDetail != null ? productDetail.getDescription() : "";
-        return ProductDetailResponse.builder()
+        return ProductDetailDescription.builder()
                 .description(description)
                 .build();
     }

@@ -63,9 +63,10 @@ public class ManageOrderController {
         }
     }
 
+    // TODO: Similar API existing (OrderController class)
     //訂單詳情頁
     @GetMapping("/orders/{orderId}")
-    public ResponseEntity<OrderDetailDto> getOrderDetail(@PathVariable("orderId") Integer orderId) {
+    public ResponseEntity<OrderDetailDto> getOrderDetail(@PathVariable Integer orderId) {
         try {
             OrderDetailDto orderDetailDto = orderDetailService.getOrderDetailById(orderId);
             return ResponseEntity.ok(orderDetailDto);

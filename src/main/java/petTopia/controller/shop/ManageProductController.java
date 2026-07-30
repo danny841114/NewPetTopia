@@ -1,6 +1,5 @@
 package petTopia.controller.shop;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import petTopia.dto.shop.ProductDto;
 import petTopia.dto.shop.ProductDto2;
 import petTopia.dto.shop.request.ShopProductsRequest;
-import petTopia.dto.shop.response.ProductDetailResponse;
+import petTopia.dto.shop.response.ProductDetailDescription;
 import petTopia.dto.shop.response.ShopProductsResponse;
 import petTopia.model.shop.Product;
 import petTopia.service.shop.ProductDetailService;
@@ -38,39 +37,38 @@ public class ManageProductController {
     // TODO: check API response
     // 後台商品管理 => 批量更新狀態
     @PutMapping("/api/updateProductsStatus")
-    public ResponseEntity<?> updateProductsStatus(@RequestParam List<Integer> productIds,
-                                                  @RequestParam String batchStatus) {
-        Map<String, Object> responseBody = new HashMap<>();
-        List<Product> productList = productService.updateProductsStatus(productIds, batchStatus);
-        responseBody.put("productList", productList);
-        return ResponseEntity.ok(responseBody);
+    public ResponseEntity<Map<String, Object>> updateProductsStatus(@RequestParam List<Integer> productIds,
+                                                                    @RequestParam String batchStatus) {
+        Map<String, Object> response = productService.updateProductsStatus(productIds, batchStatus);
+        return ResponseEntity.ok(response);
     }
 
     // 後台商品管理 => 新增商品
     @PostMapping("/api/insertProduct")
-    public ResponseEntity<?> insertProduct(@RequestPart ProductDto product, @RequestPart MultipartFile photo) {
+    public ResponseEntity<Map<String, Object>> insertProduct(@RequestPart ProductDto product,
+                                                             @RequestPart MultipartFile photo) {
         Map<String, Object> response = productService.insertProduct(product, photo);
         return ResponseEntity.ok(response);
     }
 
     // 後台商品管理 => 修改商品
     @PostMapping("/api/modifyProduct")
-    public ResponseEntity<?> modifyProduct(@RequestPart ProductDto2 product,
-                                           @RequestPart(required = false) MultipartFile photo) {
+    public ResponseEntity<Map<String, Object>> modifyProduct(@RequestPart ProductDto2 product,
+                                                             @RequestPart(required = false) MultipartFile photo) {
         Map<String, Object> responseBody = productService.modifyProduct(product, photo);
         return ResponseEntity.ok(responseBody);
     }
 
     // 後台商品管理 => 新增商品 => 如果有同名商品直接獲取Description
     @GetMapping("/api/insertProduct/getDescription")
-    public ResponseEntity<?> getProductDetailDescription(@RequestParam String productDetailName) {
-        ProductDetailResponse response = productDetailService.findByProductDetailName(productDetailName);
+    public ResponseEntity<ProductDetailDescription> getProductDetailDescription(@RequestParam String productDetailName) {
+        ProductDetailDescription response = productDetailService.findByProductDetailName(productDetailName);
         return ResponseEntity.ok(response);
     }
 
     // 後台商品管理 => 修改商品 => 獲取商品
     @GetMapping("/api/modifyProduct/getProduct")
-    public ResponseEntity<?> getProduct(@RequestParam Integer productId) {
+    public ResponseEntity<Product> getProduct(@RequestParam Integer productId) {
         Product product = productService.findById(productId);
         return ResponseEntity.ok(product);
     }
@@ -94,7 +92,7 @@ public class ManageProductController {
 
     // 後台商品管理 => 刪除商品
     @GetMapping("/api/deleteProduct")
-    public ResponseEntity<?> deleteProduct(@RequestParam Integer productId) {
+    public ResponseEntity<Map<String, Object>> deleteProduct(@RequestParam Integer productId) {
         Map<String, Object> response = productService.deleteProduct(productId);
         return ResponseEntity.ok(response);
     }
