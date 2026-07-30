@@ -11,34 +11,21 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import petTopia.dto.shop.ManageAllOrdersDto;
 import petTopia.dto.shop.OrderAnalysisDto;
 import petTopia.dto.shop.OrderDetailDto;
 import petTopia.dto.shop.OrderItemAnalysisDto;
 import petTopia.dto.shop.SalesDto;
 import petTopia.dto.shop.UpdateOneOrderDto;
+import petTopia.dto.shop.request.OrderHistoryRequest;
+import petTopia.dto.shop.response.OrderDashboardSummary;
+import petTopia.dto.shop.response.OrderOptions;
 import petTopia.projection.shop.ProductCategorySalesProjection;
 import petTopia.projection.shop.ProductSalesProjection;
-import petTopia.repository.shop.OrderRepository;
-import petTopia.repository.shop.OrderStatusRepository;
-import petTopia.repository.shop.PaymentCategoryRepository;
-import petTopia.repository.shop.PaymentStatusRepository;
-import petTopia.repository.shop.ProductRepository;
-import petTopia.repository.shop.ProductReviewRepository;
-import petTopia.repository.shop.ShippingCategoryRepository;
 import petTopia.service.shop.ManageOrderService;
 import petTopia.service.shop.OrderAnalysisExcelService;
 import petTopia.service.shop.OrderDetailService;
@@ -52,53 +39,17 @@ public class ManageOrderController {
     private final OrderDetailService orderDetailService;
     private final OrderAnalysisExcelService excelService;
 
-    private final PaymentCategoryRepository paymentCategoryRepo;
-    private final ShippingCategoryRepository shippingCategoryRepo;
-    private final ProductReviewRepository productReviewRepo;
-    private final ProductRepository productRepo;
-    private final OrderRepository orderRepo;
-    private final PaymentStatusRepository paymentStatusRepo;
-    private final OrderStatusRepository orderStatusRepo;
-
     @GetMapping("/orders/options")
-    public ResponseEntity<Map<String, Object>> getOrderOptions() {
-        Map<String, Object> response = new HashMap<>();
-
-        response.put("paymentStatusList", paymentStatusRepo.findAllPaymentStatus());
-        response.put("orderStatusList", orderStatusRepo.findAllOrderStatus());
-        response.put("paymentCategoryList", paymentCategoryRepo.findAllPaymentCategory());
-        response.put("shippingCategoryList", shippingCategoryRepo.findAllShippingCategory());
-
-        return ResponseEntity.ok(response);
+    public ResponseEntity<OrderOptions> getOrderOptions() {
+        OrderOptions orderOptions = manageOrderService.getOrderOptions();
+        return ResponseEntity.ok(orderOptions);
     }
 
     // 後台訂單管理>>查詢會員訂單歷史紀錄
     @GetMapping("/orders")
-    public ResponseEntity<Map<String, Object>> getManageOrderHistory(@RequestParam(required = false) String memberId,
-                                                                     @RequestParam(required = false) String orderStatus,
-                                                                     @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
-                                                                     @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate,
-                                                                     @RequestParam(required = false) String orderId, // 訂單編號篩選
-                                                                     @RequestParam(required = false) String paymentStatus, // 付款狀態篩選
-                                                                     @RequestParam(required = false) String productKeyword, // 商品名稱或訂單編號關鍵字篩選
-                                                                     @RequestParam(required = false) String paymentCategory, // 付款方式篩選
-                                                                     @RequestParam(required = false) String shippingCategory, // 配送方式篩選
-                                                                     @RequestParam(defaultValue = "0") int page,
-                                                                     @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<Map<String, Object>> getManageOrderHistory(@ModelAttribute OrderHistoryRequest request) {
         try {
-            Page<ManageAllOrdersDto> manageOrdersPage = manageOrderService.getManageOrderHistoryFilter(
-                    memberId,
-                    orderStatus,
-                    startDate,
-                    endDate,
-                    orderId,
-                    paymentStatus,
-                    productKeyword,
-                    paymentCategory,
-                    shippingCategory,
-                    page,
-                    size
-            );
+            Page<ManageAllOrdersDto> manageOrdersPage = manageOrderService.getManageOrderHistoryFilter(request);
 
             if (manageOrdersPage.isEmpty()) return ResponseEntity.noContent().build();
 
@@ -234,18 +185,7 @@ public class ManageOrderController {
     // 取得統計資料：訂單數量、評論數量、低庫存商品數量
     @GetMapping("/dashboard/summary")
     public ResponseEntity<?> getDashboardSummary() {
-        try {
-            long orderCount = orderRepo.count();
-            long reviewCount = productReviewRepo.countTotalProductReviews();
-            long lowStockCount = productRepo.countLowStockProducts();
-
-            return ResponseEntity.ok(Map.of(
-                    "totalOrders", orderCount,
-                    "totalReviews", reviewCount,
-                    "lowStockProducts", lowStockCount
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("無法取得統計資料，請稍後再試：" + e.getMessage());
-        }
+        OrderDashboardSummary dashboardSummary = manageOrderService.getDashboardSummary();
+        return ResponseEntity.ok(dashboardSummary);
     }
 }

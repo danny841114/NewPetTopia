@@ -10,16 +10,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductDto2 {
+    private Integer id;
+    private BigDecimal unitPrice;
+    private BigDecimal discountPrice;
+    private Integer stockQuantity;
+    private Integer status;
+    private byte[] photo;
 
-	private Integer id;
-	private BigDecimal unitPrice;
-	private BigDecimal discountPrice;
-	private Integer stockQuantity;
-	private Integer status;
-	private byte[] photo;
-	
-	private ProductDetailDto2 productDetail;
+    private ProductDetailDto2 productDetail;
     private ProductSizeDto productSize;
     private ProductColorDto productColor;
-	
 }
