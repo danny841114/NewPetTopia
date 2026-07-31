@@ -96,7 +96,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.internalServerError().body(response);
     }
 
-    @ExceptionHandler(RuntimeException.class)
+    @ExceptionHandler(AlreadyReviewedException.class)
     public ResponseEntity<CustomErrorResponse> handleAlreadyReview(AlreadyReviewedException ex) {
         log.error("ALREADY REVIEW", ex);
 
