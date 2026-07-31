@@ -3,9 +3,10 @@ package petTopia.service.shop;
 import java.util.Date;
 import java.util.Optional;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.shop.ShippingInfoDto;
 import petTopia.model.shop.Order;
 import petTopia.model.shop.Shipping;
@@ -15,27 +16,27 @@ import petTopia.model.user.Member;
 import petTopia.repository.shop.ShippingAddressRepository;
 import petTopia.repository.shop.ShippingRepository;
 
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class ShippingService {
+    private final ShippingRepository shippingRepo;
+    private final ShippingAddressRepository shippingAddressRepo;
 
-    @Autowired
-    private ShippingRepository shippingRepo;
-    
-    @Autowired
-    private ShippingAddressRepository shippingAddressRepo;
-
+    @Transactional
     public ShippingInfoDto getShippingInfoDto(Order order) {
-    	ShippingInfoDto shippingInfoDto = new ShippingInfoDto();
-    	shippingInfoDto.setReceiverName(order.getShipping().getReceiverName());
-    	shippingInfoDto.setReceiverPhone(order.getShipping().getReceiverPhone());
-    	shippingInfoDto.setStreet(order.getShipping().getShippingAddress().getStreet());
-    	shippingInfoDto.setCity(order.getShipping().getShippingAddress().getCity());
-    	shippingInfoDto.setShippingCategory(order.getShipping().getShippingCategory().getName());
-    	return shippingInfoDto;
-    }
-    
-    public ShippingAddress createShippingAddress(Member member, String city, String street) {
+        ShippingInfoDto shippingInfoDto = new ShippingInfoDto();
 
+        shippingInfoDto.setReceiverName(order.getShipping().getReceiverName());
+        shippingInfoDto.setReceiverPhone(order.getShipping().getReceiverPhone());
+        shippingInfoDto.setStreet(order.getShipping().getShippingAddress().getStreet());
+        shippingInfoDto.setCity(order.getShipping().getShippingAddress().getCity());
+        shippingInfoDto.setShippingCategory(order.getShipping().getShippingCategory().getName());
+
+        return shippingInfoDto;
+    }
+
+    public ShippingAddress createShippingAddress(Member member, String city, String street) {
         // 1. 檢查會員是否已經有相同的地址
         Optional<ShippingAddress> existingAddressOpt = shippingAddressRepo.findByMemberAndCityAndStreet(member, city, street);
 
@@ -57,6 +58,7 @@ public class ShippingService {
 
         // 4. 若地址不存在，則新增新地址並設為 isCurrent = true
         ShippingAddress shippingAddress = new ShippingAddress();
+
         shippingAddress.setMember(member);
         shippingAddress.setCity(city);
         shippingAddress.setStreet(street);
@@ -65,10 +67,14 @@ public class ShippingService {
         return shippingAddressRepo.save(shippingAddress);
     }
 
-
-    
-    public Shipping createShipping(petTopia.model.shop.Order order, ShippingAddress shippingAddress, ShippingCategory shippingCategory, String receiverName, String receiverPhone) {
+    @Transactional
+    public Shipping createShipping(Order order,
+                                   ShippingAddress shippingAddress,
+                                   ShippingCategory shippingCategory,
+                                   String receiverName,
+                                   String receiverPhone) {
         Shipping shipping = new Shipping();
+
         shipping.setOrder(order);
         shipping.setShippingAddress(shippingAddress);
         shipping.setShippingCategory(shippingCategory);

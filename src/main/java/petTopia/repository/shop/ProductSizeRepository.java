@@ -1,11 +1,10 @@
 package petTopia.repository.shop;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import petTopia.model.shop.ProductSize;
 
-public interface ProductSizeRepository extends JpaRepository<ProductSize, Integer>{
+import java.util.Optional;
 
-	public ProductSize findByName(String name);
-	
+public interface ProductSizeRepository extends JpaRepository<ProductSize, Integer> {
+    Optional<ProductSize> findByName(String name);
 }

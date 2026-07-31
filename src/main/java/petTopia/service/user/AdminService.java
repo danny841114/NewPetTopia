@@ -188,6 +188,7 @@ public class AdminService {
             user.setEmailVerified(isActive);
         }
 
+        // TODO: Error may happen
         userRepository.saveAll(userRepository.findAllById(memberIds));
     }
 

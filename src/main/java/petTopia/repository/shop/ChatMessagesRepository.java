@@ -5,22 +5,16 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import petTopia.model.shop.ChatMessages;
 
-public interface ChatMessagesRepository extends JpaRepository<ChatMessages, Integer>{
+public interface ChatMessagesRepository extends JpaRepository<ChatMessages, Integer> {
+    // TODO: 會漏掉單向對話
+    List<ChatMessages> findBySenderIdAndReceiverIdOrderByIdAsc(Integer senderId, Integer receiverId);
 
-	List<ChatMessages> findBySenderIdAndReceiverIdOrderByIdAsc(Integer senderId, Integer receiverId);
-	
-	@Query("""
-		    SELECT DISTINCT CASE 
-		        WHEN c.sender.id != :senderId THEN c.sender.id 
-		        ELSE c.receiver.id 
-		    END 
-		    FROM ChatMessages c 
-		    WHERE c.sender.id = :senderId OR c.receiver.id = :senderId
-		    ORDER BY 1 ASC
-			""")
-	List<Integer> findDistinctChatUserIds(@Param("senderId") Integer senderId);
-	
+    @Query(value = """
+                SELECT sender_id FROM chat_messages WHERE receiver_id = :userId
+                UNION
+                SELECT receiver_id FROM chat_messages WHERE sender_id = :userId
+            """, nativeQuery = true)
+    List<Integer> findDistinctChatUserIds(@Param("senderId") Integer senderId);
 }

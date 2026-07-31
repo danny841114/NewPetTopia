@@ -8,9 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import petTopia.dto.shop.request.ShopProductsRequest;
-import petTopia.model.shop.Product;
 import petTopia.service.shop.ProductDetailService;
-import petTopia.service.shop.ProductReviewService;
 import petTopia.service.shop.ProductService;
 
 @RequiredArgsConstructor
@@ -19,7 +17,6 @@ import petTopia.service.shop.ProductService;
 public class ShopProductsController {
     private final ProductService productService;
     private final ProductDetailService productDetailService;
-    private final ProductReviewService productReviewService;
 
     // 商品瀏覽頁面 vue
     @GetMapping
@@ -31,8 +28,7 @@ public class ShopProductsController {
     // 商品瀏覽頁面 => 獲取商品資訊的第一個商品的圖片
     @GetMapping("/api/getPhoto")
     public ResponseEntity<byte[]> getProductPhoto(@RequestParam Integer productDetailId) {
-        Product product = productService.findFirstByProductDetailId(productDetailId);
-        byte[] photo = product.getPhoto();
+        byte[] photo  = productService.findFirstPhotoByProductDetailId(productDetailId);
 
         if (photo == null || photo.length == 0) return ResponseEntity.notFound().build();
 

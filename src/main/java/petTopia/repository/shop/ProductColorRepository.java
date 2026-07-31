@@ -1,11 +1,10 @@
 package petTopia.repository.shop;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import petTopia.model.shop.ProductColor;
 
-public interface ProductColorRepository extends JpaRepository<ProductColor, Integer>{
+import java.util.Optional;
 
-	public ProductColor findByName(String name);
-	
+public interface ProductColorRepository extends JpaRepository<ProductColor, Integer> {
+    Optional<ProductColor> findByName(String name);
 }

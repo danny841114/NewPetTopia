@@ -50,10 +50,6 @@ public class ProductService {
                 .orElse(null);
     }
 
-    public List<Product> getAvailableProductByProductDetailId(Integer productDetailId, Boolean status) {
-        return productRepository.findByProductDetailIdAndStatus(productDetailId, status);
-    }
-
     public ProductDetailResponse getAvailableProductsByDetailId(Integer productDetailId) {
         List<Product> products = productRepository.findByProductDetailIdAndStatus(productDetailId, true);
 
@@ -145,8 +141,10 @@ public class ProductService {
                 .build();
     }
 
-    public Product findFirstByProductDetailId(Integer productDetailId) {
-        return productRepository.findFirstByProductDetailIdOrderByIdAsc(productDetailId);
+    public byte[] findFirstPhotoByProductDetailId(Integer productDetailId) {
+        return productRepository.findFirstByProductDetailIdOrderByIdAsc(productDetailId)
+                .map(Product::getPhoto)
+                .orElse(null);
     }
 
     // 批量更新狀態
@@ -155,7 +153,7 @@ public class ProductService {
         batchStatus = batchStatus != null ? batchStatus : "";
         boolean setBatchStatus = "1".equals(batchStatus);
 
-        List<Product> productList = productRepository.findAllByIdIn(productIds);
+        List<Product> productList = productRepository.findAllById(productIds);
 
         for (Product product : productList) {
             product.setStatus(setBatchStatus);
@@ -188,11 +186,12 @@ public class ProductService {
 
         // find ProductCategory
         String categoryName = productDto.getProductDetail().getProductCategory().getName();
-        ProductCategory productCategory = productCategoryRepository.findByName(categoryName);
+        ProductCategory productCategory = productCategoryRepository.findByName(categoryName).orElse(null);
 
         // set ProductDetail
-        ProductDetail productDetail = productDetailRepository.findByName(productDto.getProductDetail().getName());
-        if (productDetail == null) {
+        ProductDetail productDetail;
+        Optional<ProductDetail> optional = productDetailRepository.findByName(productDto.getProductDetail().getName());
+        if (optional.isEmpty()) {
             productDetail = new ProductDetail();
 
             productDetail.setName(productDto.getProductDetail().getName());
@@ -201,6 +200,8 @@ public class ProductService {
 
             productDetailRepository.save(productDetail);
         } else {
+            productDetail = optional.get();
+
             productDetail.setDescription(productDto.getProductDetail().getDescription());
 
             productDetailRepository.save(productDetail);
@@ -209,7 +210,7 @@ public class ProductService {
         // set ProductSize
         ProductSize productSize = null;
         if (productDto.getProductSize().getName() != null) {
-            productSize = productSizeRepository.findByName(productDto.getProductSize().getName());
+            productSize = productSizeRepository.findByName(productDto.getProductSize().getName()).orElse(null);
         }
         if (productSize == null && productDto.getProductSize().getName() != null) {
             productSize = new ProductSize();
@@ -221,7 +222,7 @@ public class ProductService {
         // set ProductColor
         ProductColor productColor = null;
         if (productDto.getProductColor().getName() != null) {
-            productColor = productColorRepository.findByName(productDto.getProductColor().getName());
+            productColor = productColorRepository.findByName(productDto.getProductColor().getName()).orElse(null);
         }
 
         if (productColor == null && productDto.getProductColor().getName() != null) {
@@ -237,7 +238,7 @@ public class ProductService {
         product.setProductColor(productColor);
 
         // 檢查同個商品是否存在 
-        Product existingProduct = productRepository.findByProductDetailIdAndProductSizeIdAndProductColorId(
+        Optional<Product> existingProduct = productRepository.findByProductDetailIdAndProductSizeIdAndProductColorId(
                 product.getProductDetail().getId(),
                 product.getProductSize() != null ? product.getProductSize().getId() : null,
                 product.getProductColor() != null ? product.getProductColor().getId() : null
@@ -246,7 +247,7 @@ public class ProductService {
         Map<String, Object> response = new HashMap<>();
 
         // 商品已存在
-        if (existingProduct != null) {
+        if (existingProduct.isPresent()) {
             response.put("messages", "同樣商品已存在");
             return response;
         }
@@ -291,7 +292,7 @@ public class ProductService {
 
             // find ProductCategory
             String categoryName = productDto.getProductDetail().getProductCategory().getName();
-            ProductCategory productCategory = productCategoryRepository.findByName(categoryName);
+            ProductCategory productCategory = productCategoryRepository.findByName(categoryName).orElse(null);
 
             // set ProductDetail
             ProductDetail productDetail = product.getProductDetail();
@@ -341,8 +342,11 @@ public class ProductService {
     @Transactional
     public void updateStockLevelsByCartItems(List<Cart> cartItems) {
         for (Cart cart : cartItems) {
+            if (cart.getProduct() == null) continue;
+
             // 呼叫 lockProduct 方法，自動加鎖
-            Product product = productRepository.lockProduct(cart.getProduct().getId());
+            Product product = productRepository.lockProduct(cart.getProduct().getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Product not found by ID"));
 
             int quantity = cart.getQuantity();
 

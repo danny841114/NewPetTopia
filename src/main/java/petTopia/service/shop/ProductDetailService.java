@@ -60,8 +60,8 @@ public class ProductDetailService {
     }
 
     public ProductDetailDescription findByProductDetailName(String productDetailName) {
-        ProductDetail productDetail = productDetailRepository.findByName(productDetailName);
-        String description = productDetail != null ? productDetail.getDescription() : "";
+        Optional<ProductDetail> optional = productDetailRepository.findByName(productDetailName);
+        String description = optional.isPresent() ? optional.get().getDescription() : "";
         return ProductDetailDescription.builder()
                 .description(description)
                 .build();

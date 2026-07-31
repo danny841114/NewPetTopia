@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.shop.request.AddProductToCartRequest;
@@ -19,6 +20,7 @@ import petTopia.repository.shop.CartRepository;
 import petTopia.repository.shop.ProductRepository;
 import petTopia.repository.user.MemberRepository;
 
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
@@ -73,7 +75,11 @@ public class CartService {
     // 清空用戶的購物車
     @Transactional
     public void clearCart(Integer memberId, List<Integer> productIds) {
-        cartRepo.deleteByMemberIdAndProductIds(memberId, productIds);
+        if (productIds != null && !productIds.isEmpty()) {
+            cartRepo.deleteByMemberIdAndProductIds(memberId, productIds);
+        } else {
+            log.warn("Product ID list is null or empty, no product will be removed");
+        }
     }
 
     // 商品加入購物車
@@ -86,7 +92,7 @@ public class CartService {
                 request.getProductDetailId(),
                 request.getProductSizeId(),
                 request.getProductColorId()
-        );
+        ).orElseThrow(() -> new EntityNotFoundException("Product not found"));
 
         Optional<Cart> cartOptional = cartRepo.findByMemberIdAndProductId(request.getMemberId(), product.getId());
 
@@ -143,11 +149,11 @@ public class CartService {
                 request.getProductDetailId(),
                 request.getProductSizeId(),
                 request.getProductColorId()
-        );
+        ).orElseThrow(() -> new EntityNotFoundException("Product not found"));
 
         Integer productQuantityInCart = cartRepo.findByMemberIdAndProductId(request.getMemberId(), product.getId())
                 .map(Cart::getQuantity)
-                .orElse(null);
+                .orElse(0);
 
         Map<String, Object> responseData = new HashMap<>();
 
@@ -172,7 +178,7 @@ public class CartService {
     }
 
     // 根據memberId獲取購物車數量
-    public Integer getMemberCartCount(Integer memberId) {
+    public Long getMemberCartCount(Integer memberId) {
         return cartRepo.countByMemberId(memberId);
     }
 }
