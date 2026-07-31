@@ -562,7 +562,7 @@ public class ManageOrderService {
                 .paymentStatusList(paymentStatusRepo.findAllPaymentStatus())
                 .orderStatusList(orderStatusRepo.findAllOrderStatus())
                 .paymentCategoryList(paymentCategoryRepo.findAllPaymentCategory())
-                .shippingCategoryList(shippingCategoryRepo.findAllShippingCategory())
+                .shippingCategoryList(shippingCategoryRepo.findAllShippingCategoryNames())
                 .build();
     }
 }

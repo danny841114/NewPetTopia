@@ -14,7 +14,7 @@ public interface ShippingAddressRepository extends JpaRepository<ShippingAddress
     List<ShippingAddress> findByMemberId(Integer memberId);
 
     //找上一次地址
-    ShippingAddress findByMemberAndIsCurrent(petTopia.model.user.Member member, boolean b);
+    ShippingAddress findByMemberAndIsCurrent(Member member, boolean b);
 
     //找該會員之前是否已有相同的運送地址
     Optional<ShippingAddress> findByMemberAndCityAndStreet(Member member, String city, String street);

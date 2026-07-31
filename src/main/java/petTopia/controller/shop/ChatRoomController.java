@@ -1,15 +1,12 @@
 package petTopia.controller.shop;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,11 +26,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import petTopia.dto.shop.ChatMessagesDto;
 import petTopia.dto.shop.request.MessageRequest;
-import petTopia.model.shop.ChatMessages;
-import petTopia.model.user.Member;
+import petTopia.dto.shop.request.UploadPhotoRequest;
+import petTopia.dto.shop.response.ChatRoomMemberDto;
 import petTopia.service.shop.ChatMessagesService;
-import petTopia.service.shop.ChatPhotoService;
-import petTopia.service.user.MemberService;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -42,63 +37,19 @@ import petTopia.service.user.MemberService;
 public class ChatRoomController {
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatMessagesService chatMessagesService;
-    private final ChatPhotoService chatPhotoService;
-    private final MemberService memberService;
 
-    private final String PATH = "src/main/resources/static";
-    private final String PATH_CHATROOM_PHOTO = "src/main/resources/static/chatRoomPhoto";
+    private static final String PATH_CHATROOM_PHOTO = "src/main/resources/static/chatRoomPhoto";
 
-    @MessageMapping("/send")  // 客戶端發送至 `/app/send`
-    public ResponseEntity<?> sendMessage(@Payload MessageRequest message) {
-        ChatMessagesDto chatMessagesDto = new ChatMessagesDto();
+    // 客戶端發送至 `/app/send`
+    @MessageMapping("/send")
+    public ResponseEntity<ChatMessagesDto> sendMessage(@Payload MessageRequest message) {
+        ChatMessagesDto chatMessagesDto = chatMessagesService.sendMessage(message);
 
-        Integer senderId = message.getSenderId();
-        Integer receiverId = message.getReceiverId();
-        String content = message.getContent();
+        // **發送給發送者**
+        messagingTemplate.convertAndSend("/topic/messages/" + message.getSenderId(), chatMessagesDto);
 
-        String sendTime = message.getSendTime();
-        Instant instant = Instant.parse(sendTime);
-        Date parsedDate = Date.from(instant);
-
-        List<String> urlPhotos = message.getPhotos();
-        List<byte[]> bytePhotos = new ArrayList<>();
-
-        // 儲存訊息
-        ChatMessages saveMessage = chatMessagesService.saveMessage(senderId, receiverId, content, parsedDate);
-        Integer saveMessageId = saveMessage.getId();
-
-        // 儲存圖片
-        if (urlPhotos != null && !urlPhotos.isEmpty()) {
-            for (String photo : urlPhotos) {
-                chatPhotoService.savePhoto(saveMessage, photo);
-
-                // 本地位置轉byte[]丟回前端
-                try {
-                    byte[] bytePhoto = convertUrlToByteArray(PATH + photo);
-                    bytePhotos.add(bytePhoto);
-                } catch (IOException e) {
-                    log.error("Add photo into chat message failed", e);
-                }
-            }
-        }
-
-        if (saveMessageId != 0) {
-            chatMessagesDto.setId(saveMessageId);
-            chatMessagesDto.setSenderId(senderId);
-            chatMessagesDto.setReceiverId(receiverId);
-            chatMessagesDto.setIsRead(false);
-            chatMessagesDto.setContent(content);
-            chatMessagesDto.setSendTime(parsedDate);
-            chatMessagesDto.setPhotos(bytePhotos);
-
-            // **發送給發送者**
-            messagingTemplate.convertAndSend("/topic/messages/" + senderId, chatMessagesDto);
-            // **發送給接收者**
-            messagingTemplate.convertAndSend("/topic/messages/" + receiverId, chatMessagesDto);
-
-        } else {
-            chatMessagesDto = null;
-        }
+        // **發送給接收者**
+        messagingTemplate.convertAndSend("/topic/messages/" + message.getReceiverId(), chatMessagesDto);
 
         return ResponseEntity.ok(chatMessagesDto);
     }
@@ -106,24 +57,10 @@ public class ChatRoomController {
     // 後台聊天室 => 獲取所有聊天用戶
     @GetMapping("/api/getChatUsers")
     public ResponseEntity<?> getChatUsers(@RequestParam Integer senderId) {
+        List<ChatRoomMemberDto> chatUsers = chatMessagesService.getChatUsers(senderId);
+
         Map<String, Object> responseBody = new HashMap<>();
-        List<Map<String, Object>> chatUsers = new ArrayList<>();
-
-        List<Integer> chatUserIds = chatMessagesService.getChatUsers(senderId);
-        if (chatUserIds != null && !chatUserIds.isEmpty()) {
-            List<Member> members = memberService.findAllById(chatUserIds);
-            if (members != null && !members.isEmpty()) {
-                for (Member member : members) {
-                    Map<String, Object> memberMap = new HashMap<>();
-                    memberMap.put("id", member.getId());
-                    memberMap.put("name", member.getName());
-                    chatUsers.add(memberMap);
-                }
-
-            }
-            responseBody.put("chatUsers", chatUsers);
-        } else
-            responseBody.put("chatUsers", null);
+        responseBody.put("chatUsers", chatUsers);
 
         return ResponseEntity.ok(responseBody);
     }
@@ -132,55 +69,20 @@ public class ChatRoomController {
     @GetMapping("/api/getChatMessagesHistory")
     public ResponseEntity<?> getChatMessagesHistory(@RequestParam Integer senderId,
                                                     @RequestParam Integer receiverId) {
+        List<ChatMessagesDto> chatMessagesDtos = chatMessagesService.getChatMessages(senderId, receiverId);
+
         Map<String, Object> responseBody = new HashMap<>();
-        List<ChatMessagesDto> chatMessagesDtoList = new ArrayList<>();
-
-        List<ChatMessages> chatMessagesHistory = chatMessagesService.getChatMessagesHistory(senderId, receiverId);
-        if (chatMessagesHistory != null) {
-
-            for (ChatMessages chatMessages : chatMessagesHistory) {
-                List<byte[]> bytePhotos = new ArrayList<>();
-
-                // 獲取圖片url
-                List<String> urlPhotos = chatPhotoService.getChatPhotos(chatMessages.getId());
-                for (String photo : urlPhotos) {
-                    // 本地位置轉byte[]丟回前端
-                    try {
-                        byte[] bytePhoto = convertUrlToByteArray(PATH + photo);
-                        bytePhotos.add(bytePhoto);
-                    } catch (IOException e) {
-                        log.error("Add photo into chat message failed", e);
-                    }
-                }
-
-                // ChatMessagesDto
-                ChatMessagesDto chatMessagesDto = new ChatMessagesDto(
-                        chatMessages.getId(),
-                        chatMessages.getSender().getId(),
-                        chatMessages.getReceiver().getId(),
-                        chatMessages.getContent(),
-                        chatMessages.getIsRead(),
-                        chatMessages.getSendTime(),
-                        bytePhotos
-                );
-
-                chatMessagesDtoList.add(chatMessagesDto);
-            }
-
-            responseBody.put("chatMessagesHistory", chatMessagesDtoList);
-        } else {
-            responseBody.put("chatMessagesHistory", null);
-        }
+        responseBody.put("chatMessagesHistory", chatMessagesDtos);
 
         return ResponseEntity.ok(responseBody);
     }
 
     // 上傳圖片
     @PostMapping("/api/uploadPhoto")
-    public ResponseEntity<?> uploadPhoto(@RequestBody Map<String, Object> photo) {
+    public ResponseEntity<?> uploadPhoto(@RequestBody UploadPhotoRequest request) {
         try {
-            String userId = (String) photo.get("userId");
-            List<String> base64Images = (List<String>) photo.get("image");
+            String userId = request.getUserId();
+            List<String> base64Images = request.getImage();
             List<Map<String, String>> uploadedImages = new ArrayList<>();
 
             // 檢查資料夾是否存在
@@ -213,11 +115,5 @@ public class ChatRoomController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
-    }
-
-    // 本地位置轉byte[]
-    private byte[] convertUrlToByteArray(String filePath) throws IOException {
-        Path path = Paths.get(filePath);
-        return Files.readAllBytes(path);
     }
 }

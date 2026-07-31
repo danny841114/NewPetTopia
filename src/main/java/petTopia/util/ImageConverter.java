@@ -3,6 +3,9 @@ package petTopia.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Base64;
@@ -38,5 +41,10 @@ public class ImageConverter {
         return byteList.stream()
                 .map(ImageConverter::byteToBase64)  // 使用 byteToBase64 方法處理每個圖片
                 .collect(Collectors.toList());
+    }
+
+    public static byte[] convertUrlToByteArray(String filePath) throws IOException {
+        Path path = Paths.get(filePath);
+        return Files.readAllBytes(path);
     }
 }

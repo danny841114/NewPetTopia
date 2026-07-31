@@ -1,7 +1,6 @@
 package petTopia.service.user;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -57,10 +56,6 @@ public class MemberService {
     public Member getMemberById(Integer memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
-    }
-
-    public List<Member> findAllById(List<Integer> memberIds) {
-        return memberRepository.findAllById(memberIds);
     }
 
     private void validateMemberInput(Member member) {
