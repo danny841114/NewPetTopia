@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import petTopia.dto.shop.response.CouponResponse;
 import petTopia.model.shop.Cart;
 import petTopia.model.shop.Coupon;
 import petTopia.service.shop.CartService;
@@ -66,27 +67,23 @@ public class ShopCartController {
         return ResponseEntity.noContent().build();
     }
 
-    // TODO: NOT MODIFIED
     // 會員購物車頁面 => 獲取會員優惠券
     @GetMapping("/coupons")
     public ResponseEntity<Object> getCoupons(@RequestParam Integer selectedCouponId,
                                              @RequestParam Integer memberId) {
-        Map<String, Object> response = new HashMap<>();
-
         // 更新優惠券使用次數
         couponService.updateCouponUsageCount(memberId);
-        Map<String, List<Coupon>> couponsMap = couponService.getCoupons(memberId);
 
-        List<Coupon> availableCoupons = couponsMap.get("available");
-        List<Coupon> expiredCoupons = couponsMap.get("expired");
+        // 獲取當前可用/過期之優惠券
+        CouponResponse couponsMap = couponService.getCoupons(memberId);
 
         // 獲取選取的優惠券
-        Coupon selectedCoupon = null;
-        if (selectedCouponId != null) selectedCoupon = couponService.getCouponById(selectedCouponId);
+        Coupon selectedCoupon = couponService.getCouponById(selectedCouponId);
 
-        if (availableCoupons != null) response.put("availableCoupons", availableCoupons);
-        if (expiredCoupons != null) response.put("expiredCoupons", expiredCoupons);
-        if (selectedCoupon != null) response.put("selectedCoupon", selectedCoupon);
+        Map<String, Object> response = new HashMap<>();
+        response.put("availableCoupons", couponsMap.getAvailable());
+        response.put("expiredCoupons", couponsMap.getExpired());
+        response.put("selectedCoupon", selectedCoupon);
 
         return ResponseEntity.ok(response);
     }

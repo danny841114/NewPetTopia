@@ -51,20 +51,14 @@ public class ShopProductReviewController {
     @GetMapping("/products/{productDetailId}/reviews/avgRating")
     public ResponseEntity<Double> getAverageRating(@PathVariable Integer productDetailId) {
         Double averageRating = productReviewService.getAverageRatingByProductDetailId(productDetailId);
-
-        return averageRating != null
-                ? ResponseEntity.ok(averageRating)
-                : ResponseEntity.notFound().build();
+        return ResponseEntity.ok(averageRating);
     }
 
     // 查詢某個商品的評論總數
     @GetMapping("/products/{productDetailId}/reviews/count")
     public ResponseEntity<Integer> getReviewsCount(@PathVariable Integer productDetailId) {
         Integer count = productReviewService.getReviewsCountByProductDetailId(productDetailId);
-
-        return count != null
-                ? ResponseEntity.ok(count)
-                : ResponseEntity.notFound().build();
+        return ResponseEntity.ok(count);
     }
 
     //該商品的所有評論
@@ -81,7 +75,7 @@ public class ShopProductReviewController {
 
     // 檢查會員是否已經對該商品評論過
     @GetMapping("/review/hasReviewed")
-    public ResponseEntity<Map<String, Boolean>> checkIfReviewed(@RequestParam Integer productId,
+    public ResponseEntity<Map<String, Object>> checkIfReviewed(@RequestParam Integer productId,
                                                                 @RequestParam Integer memberId) {
         Boolean hasReviewed = productReviewService.hasReviewed(productId, memberId);
         return ResponseEntity.ok(Map.of("hasReviewed", hasReviewed));

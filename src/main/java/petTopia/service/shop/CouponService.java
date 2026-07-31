@@ -11,6 +11,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import petTopia.dto.shop.response.CouponResponse;
 import petTopia.model.shop.Coupon;
 import petTopia.model.shop.MemberCoupon;
 import petTopia.model.shop.MemberCouponId;
@@ -62,7 +63,7 @@ public class CouponService {
     }
 
     // 用來獲取可用優惠券、過期優惠券與未滿額優惠券
-    public Map<String, List<Coupon>> getCouponsByAmount(Integer memberId, BigDecimal productTotal) {
+    public CouponResponse getCouponsByAmount(Integer memberId, BigDecimal productTotal) {
         // 獲取會員的所有優惠券
         List<MemberCoupon> memberCoupons = memberCouponRepo.findByMemberId(memberId);
 
@@ -78,7 +79,7 @@ public class CouponService {
             Coupon coupon = memberCoupon.getCoupon();
 
             // 檢查優惠券狀態是否有效且未過期
-            if (coupon.getStatus() != false && memberCoupon.getStatus() != false) {  // 狀態有效
+            if (coupon.getStatus() && memberCoupon.getStatus()) {  // 狀態有效
                 if (productTotal.compareTo(coupon.getMinOrderValue()) >= 0) {
                     availableCoupons.add(coupon); // 符合條件的優惠券
                 } else {
@@ -90,13 +91,11 @@ public class CouponService {
         }
 
         // 返回包含三個列表的 Map
-        Map<String, List<Coupon>> result = new HashMap<>();
-
-        result.put("available", availableCoupons);
-        result.put("expired", expiredCoupons);
-        result.put("notMeet", notMeetCoupons);
-
-        return result;
+        return CouponResponse.builder()
+                .available(availableCoupons)
+                .expired(expiredCoupons)
+                .notMeet(notMeetCoupons)
+                .build();
     }
 
     // 計算使用優惠券會扣到的金額
@@ -143,7 +142,7 @@ public class CouponService {
     }
 
     // 購物車獲取優惠券、過期優惠券
-    public Map<String, List<Coupon>> getCoupons(Integer memberId) {
+    public CouponResponse getCoupons(Integer memberId) {
         // 獲取會員的所有優惠券
         List<MemberCoupon> memberCoupons = memberCouponRepo.findByMemberId(memberId);
 
@@ -157,7 +156,7 @@ public class CouponService {
             Coupon coupon = memberCoupon.getCoupon();
 
             // 檢查優惠券狀態是否有效且未過期
-            if (coupon.getStatus() != false && memberCoupon.getStatus() != false) {  // 狀態有效
+            if (coupon.getStatus() && memberCoupon.getStatus()) {  // 狀態有效
                 availableCoupons.add(coupon); // 符合條件的優惠券
             } else {
                 expiredCoupons.add(coupon); // coupon狀態為 0 或 member coupon 狀態為0的優惠券
@@ -165,10 +164,9 @@ public class CouponService {
         }
 
         // 返回包含三個列表的 Map
-        Map<String, List<Coupon>> result = new HashMap<>();
-        result.put("available", availableCoupons);
-        result.put("expired", expiredCoupons);
-
-        return result;
+        return CouponResponse.builder()
+                .available(availableCoupons)
+                .expired(expiredCoupons)
+                .build();
     }
 }

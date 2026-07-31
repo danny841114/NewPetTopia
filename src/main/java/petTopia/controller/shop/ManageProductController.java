@@ -1,5 +1,6 @@
 package petTopia.controller.shop;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,12 +35,15 @@ public class ManageProductController {
         return ResponseEntity.ok(response);
     }
 
-    // TODO: check API response
     // 後台商品管理 => 批量更新狀態
     @PutMapping("/api/updateProductsStatus")
     public ResponseEntity<Map<String, Object>> updateProductsStatus(@RequestParam List<Integer> productIds,
                                                                     @RequestParam String batchStatus) {
-        Map<String, Object> response = productService.updateProductsStatus(productIds, batchStatus);
+        List<Product> modifiedProducts = productService.updateProductsStatus(productIds, batchStatus);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("productList", modifiedProducts);
+
         return ResponseEntity.ok(response);
     }
 
@@ -47,16 +51,36 @@ public class ManageProductController {
     @PostMapping("/api/insertProduct")
     public ResponseEntity<Map<String, Object>> insertProduct(@RequestPart ProductDto product,
                                                              @RequestPart MultipartFile photo) {
-        Map<String, Object> response = productService.insertProduct(product, photo);
-        return ResponseEntity.ok(response);
+        Product savedProduct = productService.insertProduct(product, photo);
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (savedProduct == null) {
+            response.put("messages", "同樣商品已存在");
+            return ResponseEntity.badRequest().body(response);
+        } else {
+            response.put("messages", "新增商品成功");
+            return ResponseEntity.ok(response);
+        }
     }
 
     // 後台商品管理 => 修改商品
     @PostMapping("/api/modifyProduct")
     public ResponseEntity<Map<String, Object>> modifyProduct(@RequestPart ProductDto2 product,
                                                              @RequestPart(required = false) MultipartFile photo) {
-        Map<String, Object> responseBody = productService.modifyProduct(product, photo);
-        return ResponseEntity.ok(responseBody);
+        Product modifiedProduct = productService.modifyProduct(product, photo);
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (modifiedProduct == null) {
+            response.put("modifyProduct", null);
+            response.put("messages", "修改商品失敗");
+            return ResponseEntity.badRequest().body(response);
+        } else {
+            response.put("modifyProduct", modifiedProduct);
+            response.put("messages", "修改商品成功");
+            return ResponseEntity.ok(response);
+        }
     }
 
     // 後台商品管理 => 新增商品 => 如果有同名商品直接獲取Description
@@ -78,9 +102,7 @@ public class ManageProductController {
     public ResponseEntity<byte[]> getProductPhoto(@RequestParam Integer productId) {
         byte[] photo = productService.getPhotoByProductId(productId);
 
-        if (photo == null || photo.length == 0) {
-            return ResponseEntity.notFound().build();
-        }
+        if (photo == null || photo.length == 0) return ResponseEntity.notFound().build();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_JPEG);
@@ -93,7 +115,16 @@ public class ManageProductController {
     // 後台商品管理 => 刪除商品
     @GetMapping("/api/deleteProduct")
     public ResponseEntity<Map<String, Object>> deleteProduct(@RequestParam Integer productId) {
-        Map<String, Object> response = productService.deleteProduct(productId);
-        return ResponseEntity.ok(response);
+        Boolean isDeleted = productService.deleteProduct(productId);
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (isDeleted) {
+            response.put("messages", "刪除商品成功");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("messages", "刪除商品失敗");
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }

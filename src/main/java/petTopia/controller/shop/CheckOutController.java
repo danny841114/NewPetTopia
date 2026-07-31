@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import petTopia.dto.shop.PaymentResponseDto;
 import petTopia.dto.shop.request.ProcessCheckout;
 import petTopia.dto.shop.response.CheckoutInfo;
-import petTopia.model.shop.Coupon;
+import petTopia.dto.shop.response.CouponResponse;
 import petTopia.model.shop.Order;
 import petTopia.model.shop.ShippingAddress;
 import petTopia.model.user.Member;
@@ -60,20 +59,18 @@ public class CheckOutController {
 
     // TODO: get memberId by credential
     @GetMapping("/coupons")
-    public ResponseEntity<Object> getCoupons(@RequestParam List<Integer> productIds, @RequestParam Integer memberId) {
+    public ResponseEntity<Map<String, Object>> getCoupons(@RequestParam List<Integer> productIds, @RequestParam Integer memberId) {
         BigDecimal subtotal = cartService.calculateTotalPrice(memberId, productIds);
 
         // 更新優惠券使用次數
         couponService.updateCouponUsageCount(memberId);
-        Map<String, List<Coupon>> couponsMap = couponService.getCouponsByAmount(memberId, subtotal);
-
-        List<Coupon> availableCoupons = couponsMap.get("available");
-        List<Coupon> notMeetCoupons = couponsMap.get("notMeet");
 
         // 獲取選取的優惠券
+        CouponResponse couponsMap = couponService.getCouponsByAmount(memberId, subtotal);
+
         Map<String, Object> response = new HashMap<>();
-        response.put("availableCoupons", availableCoupons);
-        response.put("notMeetCoupons", notMeetCoupons);
+        response.put("availableCoupons", couponsMap.getAvailable());
+        response.put("notMeetCoupons", couponsMap.getNotMeet());
 
         return ResponseEntity.ok(response);
     }

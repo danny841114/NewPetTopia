@@ -111,7 +111,7 @@ public class ManageOrderService {
 
         // 使用 getManagedOrderItemDto 方法來轉換商品明細
         List<ManageOrderItemDto> manageOrderItemDtos = orderDetails.stream()
-                .map(orderDetailService::getManagedOrderItemDto)
+                .map(ManageOrderItemDto::covertToDto)
                 .collect(Collectors.toList());
 
         managedOrder.setManagedOrderItems(manageOrderItemDtos);

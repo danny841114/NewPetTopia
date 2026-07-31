@@ -8,11 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import petTopia.dto.shop.OrderDetailDto;
 import petTopia.dto.shop.OrderHistoryDto;
 import petTopia.dto.shop.request.OrderHistoryRequest;
-import petTopia.repository.shop.OrderRepository;
 import petTopia.service.shop.OrderDetailService;
 import petTopia.service.shop.OrderService;
 
@@ -24,10 +22,7 @@ public class OrderController {
     private final OrderService orderService;
     private final OrderDetailService orderDetailService;
 
-    private final OrderRepository orderRepo;
-
     // TODO: Similar API existing (ManageOrderController class)
-    //訂單詳情頁
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<OrderDetailDto> getOrderDetail(@RequestParam Integer memberId, @PathVariable Integer orderId) {
         try {
@@ -46,7 +41,6 @@ public class OrderController {
         }
     }
 
-    // 查詢會員訂單歷史紀錄
     @GetMapping("/orderHistory")
     public ResponseEntity<Page<OrderHistoryDto>> getOrderHistory(@ModelAttribute OrderHistoryRequest request) {
         try {
@@ -58,11 +52,10 @@ public class OrderController {
         }
     }
 
-    // 取消訂單的 API
     @PutMapping("/orders/{orderId}/cancel")
     public ResponseEntity<String> cancelOrder(@RequestParam Integer memberId, @PathVariable Integer orderId) {
         try {
-            orderService.cancelOrder(orderId, memberId); // 呼叫服務層的 cancelOrder 方法
+            orderService.cancelOrder(orderId, memberId);
 
             return ResponseEntity.ok("訂單已成功取消");
         } catch (RuntimeException e) {

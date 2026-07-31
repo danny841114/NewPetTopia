@@ -11,18 +11,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import petTopia.dto.shop.ManageOrderItemDto;
 import petTopia.dto.shop.OrderDetailDto;
 import petTopia.dto.shop.OrderItemDto;
-import petTopia.dto.shop.PaymentInfoDto;
-import petTopia.dto.shop.ShippingInfoDto;
 import petTopia.model.shop.Cart;
 import petTopia.model.shop.Order;
 import petTopia.model.shop.OrderDetail;
 import petTopia.model.shop.Payment;
 import petTopia.model.shop.Product;
-import petTopia.model.shop.ProductColor;
-import petTopia.model.shop.ProductSize;
 import petTopia.model.shop.Shipping;
 import petTopia.projection.shop.ProductSalesProjection;
 import petTopia.repository.shop.OrderDetailRepository;
@@ -40,7 +35,7 @@ public class OrderDetailService {
     private final PaymentRepository paymentRepo;
 
     @Transactional
-    public List<OrderDetail> createOrderDetails(Order order, List<Cart> cartItems) {
+    public void createOrderDetails(Order order, List<Cart> cartItems) {
         List<OrderDetail> orderDetails = new ArrayList<>();
 
         for (Cart cartItem : cartItems) {
@@ -56,6 +51,7 @@ public class OrderDetailService {
 
             // **建立訂單詳情**
             OrderDetail orderDetail = new OrderDetail();
+
             orderDetail.setOrder(order);
             orderDetail.setProduct(product);
             orderDetail.setQuantity(quantity);
@@ -68,106 +64,23 @@ public class OrderDetailService {
 
         // **批量儲存 OrderDetail**
         orderDetailRepo.saveAll(orderDetails);
-
-        return orderDetails;
-    }
-
-    // TODO: make method static
-    //將訂單的商品細節轉成orderItem
-    public OrderItemDto getOrderItemDto(OrderDetail orderDetail) {
-        OrderItemDto orderItemDto = new OrderItemDto();
-
-        orderItemDto.setProductId(orderDetail.getProduct().getId());
-        orderItemDto.setProductPhoto(orderDetail.getProduct().getPhoto());
-        orderItemDto.setProductName(orderDetail.getProduct().getProductDetail().getName());
-
-        // 檢查ProductSize是否為null，避免NullPointerException
-        ProductSize productSize = orderDetail.getProduct().getProductSize();
-        orderItemDto.setProductSize(productSize != null ? productSize.getName() : null);
-
-        // 檢查ProductColor是否為null，避免NullPointerException
-        ProductColor productColor = orderDetail.getProduct().getProductColor();
-        orderItemDto.setProductColor(productColor != null ? productColor.getName() : null);
-
-        orderItemDto.setQuantity(orderDetail.getQuantity());
-        orderItemDto.setUnitPrice(orderDetail.getUnitPrice());
-        orderItemDto.setDiscountPrice(orderDetail.getDiscountPrice());
-        orderItemDto.setTotalPrice(orderDetail.getTotalPrice());
-
-        return orderItemDto;
     }
 
     // 查詢訂單的詳情
     public OrderDetailDto getOrderDetailById(Integer orderId) {
-        // 查詢訂單
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found"));
 
-        // 查詢該訂單的明細
         List<OrderDetail> orderDetails = orderDetailRepo.findByOrderId(orderId);
 
-        // 把 OrderDetail 轉換成 OrderItemDto
         List<OrderItemDto> orderItemDtos = orderDetails.stream()
-                .map(this::getOrderItemDto)
+                .map(OrderItemDto::convertToDto)
                 .collect(Collectors.toList());
 
-        // 填充 OrderDetailDto
-        OrderDetailDto orderDetailDto = new OrderDetailDto();
-
-        orderDetailDto.setMemberId(order.getMember().getId());
-        orderDetailDto.setOrderId(order.getId());
-        orderDetailDto.setSubtotal(order.getSubtotal());
-        orderDetailDto.setDiscountAmount(order.getDiscountAmount());
-        orderDetailDto.setShippingFee(order.getShippingFee());
-        orderDetailDto.setTotalAmount(order.getTotalAmount());
-        orderDetailDto.setOrderStatus(order.getOrderStatus().getName());
-        orderDetailDto.setCreatedTime(new java.sql.Date(order.getCreatedTime().getTime()));
-        orderDetailDto.setUpdatedDate(order.getUpdatedDate() != null ? new java.sql.Date(order.getUpdatedDate().getTime()) : null);
-        orderDetailDto.setOrderItems(orderItemDtos);
-
-        // 查詢並填充配送和支付資訊
         Shipping shipping = shippingRepo.findByOrderId(orderId).orElse(null);
         Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
 
-        // 填充 ShippingInfoDto
-        ShippingInfoDto shippingInfoDto = new ShippingInfoDto();
-        if (shipping != null) {
-            shippingInfoDto.setReceiverName(shipping.getReceiverName() != null ? shipping.getReceiverName() : "無");
-            shippingInfoDto.setReceiverPhone(shipping.getReceiverPhone() != null ? shipping.getReceiverPhone() : "無");
-            shippingInfoDto.setStreet(shipping.getShippingAddress() != null ? shipping.getShippingAddress().getStreet() : "無");
-            shippingInfoDto.setCity(shipping.getShippingAddress() != null ? shipping.getShippingAddress().getCity() : "");
-            shippingInfoDto.setShippingCategory(shipping.getShippingCategory() != null ? shipping.getShippingCategory().getName() : "無");
-        }
-
-        // 填充 PaymentInfoDto，加入 null 檢查
-        PaymentInfoDto paymentInfoDto = new PaymentInfoDto();
-        if (payment != null) {
-            paymentInfoDto.setPaymentCategory(payment.getPaymentCategory().getName());
-            paymentInfoDto.setPaymentAmount(payment.getPaymentAmount());
-            paymentInfoDto.setPaymentStatus(payment.getPaymentStatus().getName());
-        } else {
-            // 如果沒有支付資訊，設置預設的資訊
-            paymentInfoDto.setPaymentCategory("待確認");
-            paymentInfoDto.setPaymentAmount(new BigDecimal(0));
-            paymentInfoDto.setPaymentStatus("待付款");
-        }
-
-        // 設定配送和支付資訊
-        orderDetailDto.setShippingInfo(shippingInfoDto);
-        orderDetailDto.setPaymentInfo(paymentInfoDto);
-
-        return orderDetailDto;
-    }
-
-    // TODO: make method static
-    //將訂單的商品細節轉成manageOrderItem (後台用)
-    public ManageOrderItemDto getManagedOrderItemDto(OrderDetail orderDetail) {
-        ManageOrderItemDto manageOrderItemDto = new ManageOrderItemDto();
-
-        manageOrderItemDto.setProductId(orderDetail.getProduct().getId());
-        manageOrderItemDto.setProductName(orderDetail.getProduct().getProductDetail().getName());
-
-        return manageOrderItemDto;
+        return OrderDetailDto.convertToDto(order, orderItemDtos, shipping, payment);
     }
 
     // 銷售最好的前五名商品及其商品詳情（只計算已完成的訂單）

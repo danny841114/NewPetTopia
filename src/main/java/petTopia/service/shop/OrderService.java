@@ -271,22 +271,19 @@ public class OrderService {
         // 使用 getOrderItemDto 方法來轉換商品明細
         List<OrderItemDto> orderItemDtos = orderDetails.stream()
                 .map(orderDetail -> {
-                    OrderItemDto orderItemDto = orderDetailService.getOrderItemDto(orderDetail);
+                    OrderItemDto orderItemDto = OrderItemDto.convertToDto(orderDetail);
 
                     // 確保 ProductSize 和 ProductColor 可以為 null
-                    if (orderItemDto != null) {
-                        orderItemDto.setProductId(orderDetail.getProduct().getId());
-                        ProductSize productSize = orderDetail.getProduct().getProductSize();
-                        ProductColor productColor = orderDetail.getProduct().getProductColor();
+                    orderItemDto.setProductId(orderDetail.getProduct().getId());
+                    ProductSize productSize = orderDetail.getProduct().getProductSize();
+                    ProductColor productColor = orderDetail.getProduct().getProductColor();
 
-                        // 如果 productSize 不為 null，則設置其名稱
-                        orderItemDto.setProductSize(productSize != null ? productSize.getName() : null);
-                        // 如果 productColor 不為 null，則設置其名稱
-                        orderItemDto.setProductColor(productColor != null ? productColor.getName() : null);
+                    // 如果 productSize 不為 null，則設置其名稱
+                    orderItemDto.setProductSize(productSize != null ? productSize.getName() : null);
+                    // 如果 productColor 不為 null，則設置其名稱
+                    orderItemDto.setProductColor(productColor != null ? productColor.getName() : null);
 
-                        orderItemDto.setProductDetailId(orderDetail.getProduct().getProductDetail().getId());
-
-                    }
+                    orderItemDto.setProductDetailId(orderDetail.getProduct().getProductDetail().getId());
 
                     return orderItemDto;
                 })

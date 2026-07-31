@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.shop.ProductDetailDto;
 import petTopia.dto.shop.request.ShopProductsRequest;
 import petTopia.dto.shop.response.ProductDetailDescription;
+import petTopia.dto.shop.response.ShopProductResponse;
 import petTopia.model.shop.Product;
 import petTopia.model.shop.ProductDetail;
 import petTopia.repository.shop.ProductDetailRepository;
@@ -25,7 +26,7 @@ public class ProductDetailService {
     private final ProductDetailRepository productDetailRepository;
     private final ProductReviewRepository productReviewRepository;
 
-    public Map<String, Object> getFilteredProducts(ShopProductsRequest request) {
+    public ShopProductResponse getFilteredProducts(ShopProductsRequest request) {
         Map<String, Object> filterData = new HashMap<>();
 
         filterData.put("category", request.getCategory());
@@ -51,12 +52,10 @@ public class ProductDetailService {
 
         Long count = this.getProductsCount(filterData);
 
-        Map<String, Object> responseBody = new HashMap<>();
-
-        responseBody.put("count", count);
-        responseBody.put("productDetailDtoList", productDetailDtoList);
-
-        return responseBody;
+        return ShopProductResponse.builder()
+                .count(count)
+                .productDetailDtoList(productDetailDtoList)
+                .build();
     }
 
     public ProductDetailDescription findByProductDetailName(String productDetailName) {

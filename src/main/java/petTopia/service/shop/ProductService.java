@@ -149,7 +149,7 @@ public class ProductService {
 
     // 批量更新狀態
     @Transactional
-    public Map<String, Object> updateProductsStatus(List<Integer> productIds, String batchStatus) {
+    public List<Product> updateProductsStatus(List<Integer> productIds, String batchStatus) {
         batchStatus = batchStatus != null ? batchStatus : "";
         boolean setBatchStatus = "1".equals(batchStatus);
 
@@ -159,17 +159,12 @@ public class ProductService {
             product.setStatus(setBatchStatus);
         }
 
-        List<Product> modifiedProducts = productRepository.saveAll(productList);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("productList", modifiedProducts);
-
-        return response;
+        return productRepository.saveAll(productList);
     }
 
     // 新增商品
     @Transactional
-    public Map<String, Object> insertProduct(ProductDto productDto, MultipartFile photo) {
+    public Product insertProduct(ProductDto productDto, MultipartFile photo) {
         try {
             productDto.setPhoto(photo.getBytes());
         } catch (IOException e) {
@@ -244,13 +239,8 @@ public class ProductService {
                 product.getProductColor() != null ? product.getProductColor().getId() : null
         );
 
-        Map<String, Object> response = new HashMap<>();
-
         // 商品已存在
-        if (existingProduct.isPresent()) {
-            response.put("messages", "同樣商品已存在");
-            return response;
-        }
+        if (existingProduct.isPresent()) return null;
 
         product.setUnitPrice(productDto.getUnitPrice());
         product.setDiscountPrice(productDto.getDiscountPrice());
@@ -258,70 +248,54 @@ public class ProductService {
         product.setStatus(productDto.getStatus() == 1);
         product.setPhoto(productDto.getPhoto());
 
-        productRepository.save(product);
-
-        response.put("messages", "新增商品成功");
-        return response;
+        return productRepository.save(product);
     }
 
     // 修改商品
     @Transactional
-    public Map<String, Object> modifyProduct(ProductDto2 productDto, MultipartFile photo) {
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            if (photo != null && !photo.isEmpty()) {
-                try {
-                    productDto.setPhoto(photo.getBytes());
-                } catch (IOException e) {
-                    log.error("Get photo byte array failed", e);
-                }
-            } else {
-                Product p = this.findById(productDto.getId());
-                productDto.setPhoto(p.getPhoto());
+    public Product modifyProduct(ProductDto2 productDto, MultipartFile photo) {
+        if (photo != null && !photo.isEmpty()) {
+            try {
+                productDto.setPhoto(photo.getBytes());
+            } catch (IOException e) {
+                log.error("Get photo byte array failed", e);
             }
-
-            if (productDto.getProductSize().getName() == null || productDto.getProductSize().getName().isEmpty())
-                productDto.getProductSize().setName(null);
-
-            if (productDto.getProductColor().getName() == null || productDto.getProductColor().getName().isEmpty())
-                productDto.getProductColor().setName(null);
-
-            Product product = productRepository.findById(productDto.getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Product not found"));
-
-            // find ProductCategory
-            String categoryName = productDto.getProductDetail().getProductCategory().getName();
-            ProductCategory productCategory = productCategoryRepository.findByName(categoryName).orElse(null);
-
-            // set ProductDetail
-            ProductDetail productDetail = product.getProductDetail();
-
-            productDetail.setDescription(productDto.getProductDetail().getDescription());
-            productDetail.setProductCategory(productCategory);
-            product.setProductDetail(productDetail);
-            product.setUnitPrice(productDto.getUnitPrice());
-            product.setDiscountPrice(productDto.getDiscountPrice());
-            product.setStockQuantity(productDto.getStockQuantity());
-            product.setStatus(productDto.getStatus() == 1);
-            product.setPhoto(productDto.getPhoto());
-
-            Product modifiedProduct = productRepository.save(product);
-
-            // TODO: Should return DTO
-            response.put("modifyProduct", modifiedProduct);
-            response.put("messages", "修改商品成功");
-        } catch (Exception e) {
-            response.put("modifyProduct", null);
-            response.put("messages", "修改商品失敗");
+        } else {
+            Product p = this.findById(productDto.getId());
+            productDto.setPhoto(p.getPhoto());
         }
 
-        return response;
+        if (productDto.getProductSize().getName() == null || productDto.getProductSize().getName().isEmpty())
+            productDto.getProductSize().setName(null);
+
+        if (productDto.getProductColor().getName() == null || productDto.getProductColor().getName().isEmpty())
+            productDto.getProductColor().setName(null);
+
+        Product product = productRepository.findById(productDto.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        // find ProductCategory
+        String categoryName = productDto.getProductDetail().getProductCategory().getName();
+        ProductCategory productCategory = productCategoryRepository.findByName(categoryName).orElse(null);
+
+        // set ProductDetail
+        ProductDetail productDetail = product.getProductDetail();
+
+        productDetail.setDescription(productDto.getProductDetail().getDescription());
+        productDetail.setProductCategory(productCategory);
+        product.setProductDetail(productDetail);
+        product.setUnitPrice(productDto.getUnitPrice());
+        product.setDiscountPrice(productDto.getDiscountPrice());
+        product.setStockQuantity(productDto.getStockQuantity());
+        product.setStatus(productDto.getStatus() == 1);
+        product.setPhoto(productDto.getPhoto());
+
+        return productRepository.save(product);
     }
 
     // 刪除商品
     @Transactional
-    public Map<String, Object> deleteProduct(Integer productId) {
+    public Boolean deleteProduct(Integer productId) {
         Map<String, Object> response = new HashMap<>();
 
         Optional<Product> productOpt = productRepository.findById(productId);
@@ -330,12 +304,10 @@ public class ProductService {
             Product product = productOpt.get();
             productRepository.delete(product);
 
-            response.put("messages", "刪除商品成功");
-            return response;
+            return true;
         }
 
-        response.put("messages", "刪除商品失敗");
-        return response;
+        return false;
     }
 
     // 更新庫存數量

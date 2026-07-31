@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.shop.request.AddProductToCartRequest;
 import petTopia.dto.shop.request.ConfirmProductRequest;
 import petTopia.dto.shop.response.CheckoutInfo;
+import petTopia.dto.shop.response.ConfirmedProduct;
 import petTopia.model.shop.*;
 import petTopia.model.user.Member;
 import petTopia.repository.shop.*;
@@ -146,7 +147,7 @@ public class CartService {
         return cart;
     }
 
-    public Map<String, Object> getCartByMemberAndProductRelatedData(ConfirmProductRequest request) {
+    public ConfirmedProduct getCartByMemberAndProductRelatedData(ConfirmProductRequest request) {
         Product product = productRepo.findByProductDetailIdAndProductSizeIdAndProductColorId(
                 request.getProductDetailId(),
                 request.getProductSizeId(),
@@ -157,12 +158,10 @@ public class CartService {
                 .map(Cart::getQuantity)
                 .orElse(0);
 
-        Map<String, Object> responseData = new HashMap<>();
-
-        responseData.put("productQuantityInCart", productQuantityInCart);
-        responseData.put("product", product);
-
-        return responseData;
+        return ConfirmedProduct.builder()
+                .productQuantityInCart(productQuantityInCart)
+                .product(product)
+                .build();
     }
 
     public List<Cart> getCartByMemberId(Integer memberId) {
