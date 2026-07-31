@@ -1,16 +1,8 @@
 package petTopia.controller.shop;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +21,7 @@ import petTopia.dto.shop.request.MessageRequest;
 import petTopia.dto.shop.request.UploadPhotoRequest;
 import petTopia.dto.shop.response.ChatRoomMemberDto;
 import petTopia.service.shop.ChatMessagesService;
+import petTopia.service.shop.ChatPhotoService;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -37,6 +30,7 @@ import petTopia.service.shop.ChatMessagesService;
 public class ChatRoomController {
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatMessagesService chatMessagesService;
+    private final ChatPhotoService chatPhotoService;
 
     private static final String PATH_CHATROOM_PHOTO = "src/main/resources/static/chatRoomPhoto";
 
@@ -81,36 +75,7 @@ public class ChatRoomController {
     @PostMapping("/api/uploadPhoto")
     public ResponseEntity<?> uploadPhoto(@RequestBody UploadPhotoRequest request) {
         try {
-            String userId = request.getUserId();
-            List<String> base64Images = request.getImage();
-            List<Map<String, String>> uploadedImages = new ArrayList<>();
-
-            // 檢查資料夾是否存在
-            Path uploadDir = Paths.get(PATH_CHATROOM_PHOTO);
-            if (!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-            }
-
-            for (String base64String : base64Images) {
-                // 解碼 Base64 -> byte[]
-                byte[] imageBytes = Base64.getDecoder().decode(base64String.split(",")[1]);
-
-                // 產生唯一檔名
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-                String formattedDate = now.format(formatter);
-                String fileName = userId + "_" + formattedDate + "_" + UUID.randomUUID().toString().substring(0, 8) + ".jpg";
-                Path filePath = uploadDir.resolve(fileName);
-
-                // 儲存圖片
-                Files.write(filePath, imageBytes);
-
-                // 準備回傳 URL
-                Map<String, String> response = new HashMap<>();
-                response.put("url", "/chatRoomPhoto/" + fileName);
-                uploadedImages.add(response);
-            }
-
+            List<Map<String, String>> uploadedImages = chatPhotoService.uploadPhoto(request);
             return ResponseEntity.ok(uploadedImages);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

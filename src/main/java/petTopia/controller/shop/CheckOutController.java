@@ -16,21 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 import petTopia.dto.shop.PaymentResponseDto;
 import petTopia.dto.shop.request.ProcessCheckout;
 import petTopia.dto.shop.response.CheckoutInfo;
-import petTopia.model.shop.Cart;
 import petTopia.model.shop.Coupon;
 import petTopia.model.shop.Order;
-import petTopia.model.shop.PaymentCategory;
 import petTopia.model.shop.ShippingAddress;
-import petTopia.model.shop.ShippingCategory;
 import petTopia.model.user.Member;
 import petTopia.service.shop.CartService;
 import petTopia.service.shop.CouponService;
 import petTopia.service.shop.OrderService;
 import petTopia.service.shop.PaymentService;
 import petTopia.service.user.MemberService;
-import petTopia.repository.shop.PaymentCategoryRepository;
-import petTopia.repository.shop.ShippingCategoryRepository;
-import petTopia.repository.shop.ShippingAddressRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -38,10 +32,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RestController
 @RequestMapping("/shop")
 public class CheckOutController {
-    private final ShippingAddressRepository shippingAddressRepo;
-    private final ShippingCategoryRepository shippingCategoryRepo;
-    private final PaymentCategoryRepository paymentCategoryRepo;
-
     private final CartService cartService;
     private final CouponService couponService;
     private final OrderService orderService;
@@ -49,38 +39,22 @@ public class CheckOutController {
     private final MemberService memberService;
 
     @GetMapping("/checkout")
-    public ResponseEntity<CheckoutInfo> getCheckoutInfo(@RequestParam List<Integer> productIds, @RequestParam Integer memberId) {
-        List<Cart> cartItems = cartService.getCartByMemberIdAndProductIds(memberId, productIds);
-        BigDecimal subtotal = cartService.calculateTotalPrice(memberId, productIds);
-        List<ShippingCategory> shippingCategories = shippingCategoryRepo.findAll();
-        List<PaymentCategory> paymentCategories = paymentCategoryRepo.findAll();
-
-        CheckoutInfo checkoutInfo = CheckoutInfo.builder()
-                .cartItems(cartItems)
-                .subtotal(subtotal)
-                .shippingCategories(shippingCategories)
-                .paymentCategories(paymentCategories)
-                .build();
-
+    public ResponseEntity<CheckoutInfo> getCheckoutInfo(@RequestParam List<Integer> productIds,
+                                                        @RequestParam Integer memberId) {
+        CheckoutInfo checkoutInfo = cartService.getCheckoutInfo(productIds, memberId);
         return ResponseEntity.ok(checkoutInfo);
     }
 
     // TODO: Use @PathVariable
     @GetMapping("/member")
-    public ResponseEntity<Object> getMemberInfo(@RequestParam Integer memberId) {
+    public ResponseEntity<Member> getMemberInfo(@RequestParam Integer memberId) {
         Member member = memberService.getMemberById(memberId);
         return ResponseEntity.ok(member);
     }
 
     @GetMapping("/shipping/address")
-    public ResponseEntity<Object> getShippingAddress(@RequestParam Integer memberId) {
-        Member member = memberService.getMemberById(memberId);
-
-        ShippingAddress lastShippingAddress = shippingAddressRepo.findByMemberAndIsCurrent(member, true);
-        if (lastShippingAddress == null) {
-            lastShippingAddress = new ShippingAddress();  // 避免前端渲染錯誤
-        }
-
+    public ResponseEntity<ShippingAddress> getShippingAddress(@RequestParam Integer memberId) {
+        ShippingAddress lastShippingAddress = cartService.getLastShippingAddress(memberId);
         return ResponseEntity.ok(lastShippingAddress);
     }
 
@@ -133,9 +107,17 @@ public class CheckOutController {
 
             // 建立訂單
             Map<String, Object> orderResponse = orderService.createOrder(
-                    member, memberId, couponId, shippingCategoryId,
-                    paymentCategoryId, paymentAmount, street, city,
-                    receiverName, receiverPhone, productIdList
+                    member,
+                    memberId,
+                    couponId,
+                    shippingCategoryId,
+                    paymentCategoryId,
+                    paymentAmount,
+                    street,
+                    city,
+                    receiverName,
+                    receiverPhone,
+                    productIdList
             );
             Order order = (Order) orderResponse.get("order");
 
@@ -149,7 +131,8 @@ public class CheckOutController {
                             "paymentData", paymentResponse
                     ));
                 } else {
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "付款頁面生成失敗"));
+                    return ResponseEntity.internalServerError()
+                            .body(Map.of("error", "付款頁面生成失敗"));
                 }
             }
 
@@ -167,7 +150,7 @@ public class CheckOutController {
             ));
         } catch (Exception ex) {
             // 處理其他未預期的錯誤
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+            return ResponseEntity.internalServerError().body(Map.of(
                     "error", "系統發生錯誤，請稍後再試",
                     "message", ex.getMessage()
             ));
@@ -177,9 +160,7 @@ public class CheckOutController {
     @PostMapping("/payment/ecpay/callback")
     public ResponseEntity<String> handleEcPayCallback(@RequestParam Map<String, String> callbackParams) {
         try {
-            // 呼叫 Service 層處理回調邏輯
             String response = paymentService.handleEcPayCallback(callbackParams);
-
             return ResponseEntity.ok(response); // 確保回應是 "1|OK" 或 "0|Error: XXX"
         } catch (Exception e) {
             return ResponseEntity.ok("0|Error: " + e.getMessage()); // 發生錯誤時，仍符合 ECPay 格式

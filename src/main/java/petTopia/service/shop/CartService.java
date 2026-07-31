@@ -13,11 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.shop.request.AddProductToCartRequest;
 import petTopia.dto.shop.request.ConfirmProductRequest;
-import petTopia.model.shop.Cart;
-import petTopia.model.shop.Product;
+import petTopia.dto.shop.response.CheckoutInfo;
+import petTopia.model.shop.*;
 import petTopia.model.user.Member;
-import petTopia.repository.shop.CartRepository;
-import petTopia.repository.shop.ProductRepository;
+import petTopia.repository.shop.*;
 import petTopia.repository.user.MemberRepository;
 
 @Slf4j
@@ -28,6 +27,9 @@ public class CartService {
     private final CartRepository cartRepo;
     private final ProductRepository productRepo;
     private final MemberRepository memberRepo;
+    private final ShippingCategoryRepository shippingCategoryRepo;
+    private final PaymentCategoryRepository paymentCategoryRepo;
+    private final ShippingAddressRepository shippingAddressRepo;
 
     public BigDecimal calculateTotalPrice(Integer memberId, List<Integer> productIds) {
         BigDecimal total = BigDecimal.ZERO; // 初始化為 0
@@ -167,10 +169,6 @@ public class CartService {
         return cartRepo.findByMemberId(memberId);
     }
 
-    public List<Cart> getCartByMemberIdAndProductIds(Integer memberId, List<Integer> productIds) {
-        return cartRepo.findByMemberIdAndProductIdIn(memberId, productIds);
-    }
-
     @Transactional
     public void deleteCartById(Integer cartId) {
         cartRepo.findById(cartId)
@@ -180,5 +178,27 @@ public class CartService {
     // 根據memberId獲取購物車數量
     public Long getMemberCartCount(Integer memberId) {
         return cartRepo.countByMemberId(memberId);
+    }
+
+    public CheckoutInfo getCheckoutInfo(List<Integer> productIds, Integer memberId) {
+        BigDecimal subtotal = this.calculateTotalPrice(memberId, productIds);
+        List<Cart> cartItems = cartRepo.findByMemberIdAndProductIdIn(memberId, productIds);
+        List<ShippingCategory> shippingCategories = shippingCategoryRepo.findAll();
+        List<PaymentCategory> paymentCategories = paymentCategoryRepo.findAll();
+
+        return CheckoutInfo.builder()
+                .subtotal(subtotal)
+                .cartItems(cartItems)
+                .shippingCategories(shippingCategories)
+                .paymentCategories(paymentCategories)
+                .build();
+    }
+
+    public ShippingAddress getLastShippingAddress(Integer memberId) {
+        Member member = memberRepo.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+
+        return shippingAddressRepo.findByMemberAndIsCurrent(member, true)
+                .orElse(new ShippingAddress()); // 避免前端渲染錯誤
     }
 }

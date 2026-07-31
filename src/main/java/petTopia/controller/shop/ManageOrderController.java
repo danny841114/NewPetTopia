@@ -2,8 +2,6 @@ package petTopia.controller.shop;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import petTopia.dto.shop.ManageAllOrdersDto;
-import petTopia.dto.shop.OrderAnalysisDto;
 import petTopia.dto.shop.OrderDetailDto;
-import petTopia.dto.shop.OrderItemAnalysisDto;
 import petTopia.dto.shop.SalesDto;
 import petTopia.dto.shop.UpdateOneOrderDto;
 import petTopia.dto.shop.request.OrderHistoryRequest;
@@ -27,7 +23,6 @@ import petTopia.dto.shop.response.OrderOptions;
 import petTopia.projection.shop.ProductCategorySalesProjection;
 import petTopia.projection.shop.ProductSalesProjection;
 import petTopia.service.shop.ManageOrderService;
-import petTopia.service.shop.OrderAnalysisExcelService;
 import petTopia.service.shop.OrderDetailService;
 
 @Slf4j
@@ -37,7 +32,6 @@ import petTopia.service.shop.OrderDetailService;
 public class ManageOrderController {
     private final ManageOrderService manageOrderService;
     private final OrderDetailService orderDetailService;
-    private final OrderAnalysisExcelService excelService;
 
     @GetMapping("/orders/options")
     public ResponseEntity<OrderOptions> getOrderOptions() {
@@ -160,21 +154,8 @@ public class ManageOrderController {
     @GetMapping("/orders/generateReport")
     public ResponseEntity<byte[]> generateReport(@RequestParam String orderStartDate,
                                                  @RequestParam String orderEndDate) throws IOException, ParseException {
-        // 指定日期格式
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        byte[] excelData = manageOrderService.getOrderReport(orderStartDate, orderEndDate);
 
-        // 轉換 String 為 Date
-        Date startDate = dateFormat.parse(orderStartDate);
-        Date endDate = dateFormat.parse(orderEndDate);
-
-        // 查詢數據
-        List<OrderAnalysisDto> orders = manageOrderService.getOrdersAnalysisByDateRange(startDate, endDate);
-        List<OrderItemAnalysisDto> orderItems = manageOrderService.getOrderItemsByDateRange(startDate, endDate);
-
-        // 產生 Excel
-        byte[] excelData = excelService.generateOrdersAndItemsExcel(orders, orderItems);
-
-        // 設定回應 Headers
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=orders_and_items_report.xlsx");
 
