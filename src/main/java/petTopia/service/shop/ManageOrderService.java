@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -66,7 +65,6 @@ public class ManageOrderService {
     private final OrderRepository orderRepo;
     private final ShippingRepository shippingRepo;
     private final OrderStatusRepository orderStatusRepo;
-    private final OrderDetailService orderDetailService;
     private final OrderDetailRepository orderDetailRepo;
     private final PaymentRepository paymentRepo;
     private final PaymentStatusRepository paymentStatusRepo;

@@ -4,10 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -36,8 +33,6 @@ import petTopia.model.shop.OrderStatus;
 import petTopia.model.shop.Payment;
 import petTopia.model.shop.PaymentCategory;
 import petTopia.model.shop.Product;
-import petTopia.model.shop.ProductColor;
-import petTopia.model.shop.ProductSize;
 import petTopia.model.shop.Shipping;
 import petTopia.model.shop.ShippingAddress;
 import petTopia.model.shop.ShippingCategory;
@@ -112,10 +107,9 @@ public class OrderService {
         return new OrderSummaryAmountDto(subtotal, discountAmount, shippingFee, orderTotal);
     }
 
-    // TODO: parameters change to DTO
     //新增訂單
     @Transactional
-    public Map<String, Object> createOrder(Member member,
+    public Order createOrder(Member member,
                                            Integer memberId,
                                            Integer couponId,
                                            Integer shippingCategoryId,
@@ -132,7 +126,6 @@ public class OrderService {
 
         // 更新庫存
         try {
-            // TODO: do not use other service
             productService.updateStockLevelsByCartItems(cartItems);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("庫存不足，無法完成訂單", e);
@@ -225,16 +218,12 @@ public class OrderService {
             }
         }
 
-        orderRepo.save(order);
+        Order savedOrder = orderRepo.save(order);
 
         // 清空購物車
         cartService.clearCart(memberId, productIds);
 
-        // **回傳訂單資訊 & ECPay 付款網址**
-        Map<String, Object> response = new HashMap<>();
-        response.put("order", order);
-
-        return response;
+        return savedOrder;
     }
 
     //把 order 轉成 orderHistoryDto
@@ -268,25 +257,9 @@ public class OrderService {
         // 查詢該訂單的商品明細
         List<OrderDetail> orderDetails = orderDetailRepo.findByOrderId(order.getId());
 
-        // 使用 getOrderItemDto 方法來轉換商品明細
+        // 轉換商品明細
         List<OrderItemDto> orderItemDtos = orderDetails.stream()
-                .map(orderDetail -> {
-                    OrderItemDto orderItemDto = OrderItemDto.convertToDto(orderDetail);
-
-                    // 確保 ProductSize 和 ProductColor 可以為 null
-                    orderItemDto.setProductId(orderDetail.getProduct().getId());
-                    ProductSize productSize = orderDetail.getProduct().getProductSize();
-                    ProductColor productColor = orderDetail.getProduct().getProductColor();
-
-                    // 如果 productSize 不為 null，則設置其名稱
-                    orderItemDto.setProductSize(productSize != null ? productSize.getName() : null);
-                    // 如果 productColor 不為 null，則設置其名稱
-                    orderItemDto.setProductColor(productColor != null ? productColor.getName() : null);
-
-                    orderItemDto.setProductDetailId(orderDetail.getProduct().getProductDetail().getId());
-
-                    return orderItemDto;
-                })
+                .map(OrderItemDto::convertToDto)
                 .collect(Collectors.toList());
 
         orderHistory.setOrderItems(orderItemDtos);
@@ -385,7 +358,8 @@ public class OrderService {
                 .orElseThrow(() -> new EntityNotFoundException("找不到訂單"));
 
         // **標記訂單為取消**
-        setOrderStatus(order, 6);
+        orderStatusRepo.findById(6)
+                .ifPresent(order::setOrderStatus);
         orderRepo.save(order);
 
         // **恢復優惠券使用次數**
@@ -393,13 +367,6 @@ public class OrderService {
             couponService.updateCouponUsageCount(memberId);
         }
     }
-
-    // 將設置支付狀態的邏輯提取成一個方法
-    private void setOrderStatus(Order order, Integer statusId) {
-        Optional<OrderStatus> orderStatus = orderStatusRepo.findById(statusId);
-        orderStatus.ifPresent(order::setOrderStatus); // 只有當 orderStatus 存在時才設置
-    }
-
 
     // 查詢該會員的所有訂單
 //    public List<OrderHistoryDto> getOrderHistoryByMemberId(Integer memberId) {

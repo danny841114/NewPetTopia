@@ -103,7 +103,7 @@ public class CheckOutController {
             BigDecimal paymentAmount = (amount != null) ? new BigDecimal(amount) : null;
 
             // 建立訂單
-            Map<String, Object> orderResponse = orderService.createOrder(
+            Order order = orderService.createOrder(
                     member,
                     memberId,
                     couponId,
@@ -116,7 +116,6 @@ public class CheckOutController {
                     receiverPhone,
                     productIdList
             );
-            Order order = (Order) orderResponse.get("order");
 
             // 信用卡付款
             if (paymentCategoryId == 1) {

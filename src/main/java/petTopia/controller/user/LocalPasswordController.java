@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import petTopia.model.user.User;
 import petTopia.service.user.EmailService;
 import petTopia.service.user.MemberLoginService;
@@ -71,11 +70,13 @@ public class LocalPasswordController {
         try {
             User user = memberLoginService.findByEmail(email);
             if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "找不到會員帳號"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "找不到會員帳號"));
             }
 
             if (user.getProvider() == User.Provider.LOCAL) {
-                return ResponseEntity.badRequest().body(Map.of("error", "此帳號已是本地帳號"));
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "此帳號已是本地帳號"));
             }
 
             // 生成 6 位數驗證碼
@@ -92,7 +93,8 @@ public class LocalPasswordController {
             return ResponseEntity.ok(Map.of("message", "驗證碼已發送", "email", email));
         } catch (Exception e) {
             log.error("發送驗證碼失敗", e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "發送驗證碼失敗: " + e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "發送驗證碼失敗: " + e.getMessage()));
         }
     }
 
@@ -105,12 +107,14 @@ public class LocalPasswordController {
         String code = request.get("code");
 
         if (email == null || code == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "電子郵件和驗證碼不能為空"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "電子郵件和驗證碼不能為空"));
         }
 
         Map<String, Object> codeData = verificationCodes.get(email);
         if (codeData == null || !code.equals(codeData.get("code"))) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "驗證碼錯誤或已過期"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "驗證碼錯誤或已過期"));
         }
 
         return ResponseEntity.ok(Map.of("message", "驗證成功", "email", email, "verified", true));
@@ -143,7 +147,8 @@ public class LocalPasswordController {
             return ResponseEntity.ok(Map.of("message", "密碼設置成功", "email", email));
         } catch (Exception e) {
             log.error("設置密碼失敗", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "設置密碼失敗: " + e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "設置密碼失敗: " + e.getMessage()));
         }
     }
 }

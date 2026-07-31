@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-
 import petTopia.model.user.Member;
 import petTopia.model.user.User;
 import petTopia.service.user.MemberService;
@@ -18,12 +17,10 @@ import petTopia.service.user.MemberLoginService;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.HashMap;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import javax.imageio.ImageIO;
 
 @Slf4j
 @RequiredArgsConstructor

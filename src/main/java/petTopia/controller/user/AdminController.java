@@ -13,7 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import petTopia.dto.user.request.*;
 import petTopia.dto.user.response.*;
 import petTopia.jwt.JwtUtil;
@@ -28,7 +27,6 @@ import petTopia.repository.user.MemberRepository;
 import java.util.HashMap;
 import java.util.Map;
 import java.time.LocalDateTime;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
@@ -177,7 +175,7 @@ public class AdminController {
             return ResponseEntity.ok(dashboard);
         } catch (Exception e) {
             log.error("獲取管理後台資料失敗", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.internalServerError()
                     .body(Map.of("error", "獲取資料失敗：" + e.getMessage()));
         }
     }
@@ -220,7 +218,7 @@ public class AdminController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("獲取會員列表失敗", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.internalServerError()
                     .body(Map.of("error", "獲取資料失敗：" + e.getMessage()));
         }
     }
@@ -263,7 +261,7 @@ public class AdminController {
             return ResponseEntity.ok(Map.of("message", "會員刪除成功"));
         } catch (Exception e) {
             log.error("刪除會員失敗", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.internalServerError()
                     .body(Map.of("error", "刪除失敗：" + e.getMessage()));
         }
     }
@@ -280,7 +278,7 @@ public class AdminController {
             return ResponseEntity.ok(Map.of("message", "會員狀態更新成功"));
         } catch (Exception e) {
             log.error("批量更新會員狀態失敗", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.internalServerError()
                     .body(Map.of("error", "更新失敗：" + e.getMessage()));
         }
     }

@@ -26,6 +26,7 @@ public class OrderItemDto {
         OrderItemDto orderItemDto = new OrderItemDto();
 
         orderItemDto.setProductId(orderDetail.getProduct().getId());
+        orderItemDto.setProductDetailId(orderDetail.getId());
         orderItemDto.setProductPhoto(orderDetail.getProduct().getPhoto());
         orderItemDto.setProductName(orderDetail.getProduct().getProductDetail().getName());
 
