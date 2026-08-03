@@ -1,50 +1,65 @@
 package petTopia.util;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.Base64;
+import java.util.Iterator;
 
+@Slf4j
 public class ImageConverter {
-    /* 讀取檔案之MimeType */
-    public static String getMimeType(byte[] imageBytes) {
-        if (imageBytes == null) {
-            return "image/jpg";
-        }
+    // 讀取檔案之 Mime Type
+    public static String getMimeType(byte[] image) {
+        String defaultMimeType = "image/jpeg";
 
-        try {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
-            String mimeType = URLConnection.guessContentTypeFromStream(inputStream);
+        if (image == null || image.length == 0) return defaultMimeType;
 
-            inputStream.close();
+        try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(image))) {
+            if (iis == null) return defaultMimeType;
 
-            return mimeType;
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+
+            if (readers.hasNext()) {
+                ImageReader reader = readers.next();
+                String formatName = reader.getFormatName().toLowerCase();
+
+                return switch (formatName) {
+                    case "png" -> "image/png";
+                    case "gif" -> "image/gif";
+                    case "bmp" -> "image/bmp";
+                    case "webp" -> "image/webp";
+                    default -> "image/jpeg";
+                };
+            }
         } catch (IOException e) {
-            return "image/jpg";
+            log.error("Get mine type from image failed", e);
         }
+
+        return defaultMimeType;
     }
 
-    //單張照片轉base64
+    // 單張照片轉 base64
     public static String byteToBase64(byte[] bytes) {
         if (bytes == null) return null;
         return Base64.getEncoder().encodeToString(bytes);
     }
 
-    //照片list轉base64
-    public static List<String> byteListToBase64(List<byte[]> byteList) {
-        if (byteList == null) return List.of();
-        return byteList.stream()
-                .map(ImageConverter::byteToBase64)  // 使用 byteToBase64 方法處理每個圖片
-                .collect(Collectors.toList());
-    }
-
+    // 將專案內的檔案轉為 byte[]
     public static byte[] convertUrlToByteArray(String filePath) throws IOException {
         Path path = Paths.get(filePath);
         return Files.readAllBytes(path);
+    }
+
+    // 將外部檔案轉成 byte[]
+    public static byte[] processImage(MultipartFile file) throws IOException {
+        return file.getBytes();
     }
 }

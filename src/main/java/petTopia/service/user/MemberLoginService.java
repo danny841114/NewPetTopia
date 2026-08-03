@@ -2,14 +2,21 @@ package petTopia.service.user;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import petTopia.dto.user.response.MemberResponse;
 import petTopia.model.user.User;
 import petTopia.model.user.Member;
 import petTopia.repository.user.UserRepository;
 import petTopia.repository.user.MemberRepository;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +24,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
@@ -26,6 +34,7 @@ public class MemberLoginService {
     private final UserRepository usersRepository;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MemberService memberService;
 
     public Map<String, Object> memberLogin(String email, String password) {
         Map<String, Object> result = new HashMap<>();

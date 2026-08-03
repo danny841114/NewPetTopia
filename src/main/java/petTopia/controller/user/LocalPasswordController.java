@@ -48,12 +48,9 @@ public class LocalPasswordController {
         }
 
         return ResponseEntity.ok(Map.of(
-                "email",
-                email,
-                "provider",
-                user.getProvider(),
-                "canSetupLocalPassword",
-                true
+                "email", email,
+                "provider", user.getProvider(),
+                "canSetupLocalPassword", true
         ));
     }
 

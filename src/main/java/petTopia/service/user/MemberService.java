@@ -1,17 +1,25 @@
 package petTopia.service.user;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import petTopia.dto.user.request.UpdateProfile;
 import petTopia.model.user.Member;
 import petTopia.model.user.User;
 import petTopia.repository.user.MemberRepository;
 import petTopia.repository.user.UserRepository;
+import petTopia.util.ImageConverter;
+import petTopia.util.StringHelper;
 
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
@@ -21,10 +29,16 @@ public class MemberService {
 
     @Transactional
     public Member createOrUpdateMember(Member member) {
-        validateMemberInput(member);
+        if (member.getUser() == null || member.getUser().getId() == null) {
+            throw new IllegalArgumentException("User from member is null");
+        }
+
+        if (!member.getId().equals(member.getUser().getId())) {
+            throw new IllegalArgumentException("Member ID and User ID are not match");
+        }
 
         User user = usersRepository.findById(member.getId())
-                .orElseThrow(() -> new EntityNotFoundException("用戶不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         member.setUser(user);
 
@@ -58,15 +72,49 @@ public class MemberService {
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
     }
 
-    private void validateMemberInput(Member member) {
-        // 確保必要的關聯存在
-        if (member.getUser() == null || member.getUser().getId() == null) {
-            throw new IllegalArgumentException("用戶關聯不能為空");
-        }
+    public void checkIsRegisteredViaEmail(User user, Member member, String email) {
+        // 對於第三方登入用戶，特別檢查名稱格式
+        if (user.getProvider() != User.Provider.LOCAL) {
+            String currentName = member.getName();
 
-        // 確保ID匹配
-        if (!member.getId().equals(member.getUser().getId())) {
-            throw new IllegalArgumentException("用戶ID不匹配");
+            if (StringHelper.isEmailFormat(currentName, email)) {
+                String emailUsername = email.split("@")[0];
+                log.info("名稱是郵箱格式，轉換為更友好的格式: {} -> {}", currentName, emailUsername);
+
+                if (!emailUsername.equals(currentName)) {
+                    log.info("更新會員資料中的名稱為更友好的格式: {} -> {}", currentName, emailUsername);
+
+                    member.setName(emailUsername);
+                    member.setUpdatedDate(LocalDateTime.now());
+
+                    this.createOrUpdateMember(member);
+                }
+            }
+        }
+    }
+
+    public void updateProfile(Member member, UpdateProfile request) {
+        member.setName(request.getName());
+        member.setPhone(request.getPhone());
+        member.setGender(request.getGender());
+        member.setAddress(request.getAddress());
+        if (request.getBirthdate() != null) member.setBirthdate(request.getBirthdate());
+        member.setUpdatedDate(LocalDateTime.now());
+
+        this.createOrUpdateMember(member);
+    }
+
+    public void uploadPhoto(Member member, MultipartFile photo) throws IOException {
+        if (photo != null && !photo.isEmpty()) {
+            byte[] processedImage = ImageConverter.processImage(photo);
+
+            member.setProfilePhoto(processedImage);
+            member.setUpdatedDate(LocalDateTime.now());
+
+            this.createOrUpdateMember(member);
+        } else {
+            log.warn("Photo is null, no updates will be executed.");
+            throw new BadRequestException("Photo is null");
         }
     }
 }
