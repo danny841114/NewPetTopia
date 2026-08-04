@@ -98,7 +98,7 @@ public class MemberController {
         try {
             Member member = getMemberViaUserViaEmail();
 
-            if (member.getProfilePhoto() != null) return ResponseEntity.notFound().build();
+            if (member.getProfilePhoto() == null) return ResponseEntity.notFound().build();
 
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_JPEG)
