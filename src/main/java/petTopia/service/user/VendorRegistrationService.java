@@ -5,61 +5,87 @@ import java.util.*;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import petTopia.dto.user.request.RegisterRequest;
+import petTopia.dto.user.response.VendorRegisterResponse;
 import petTopia.model.user.User;
 import petTopia.model.vendor.Vendor;
 import petTopia.model.user.Member;
 import petTopia.repository.user.UserRepository;
 import petTopia.repository.vendor.VendorRepository;
 import petTopia.repository.user.MemberRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class VendorRegistrationService {
-    private static final Logger logger = LoggerFactory.getLogger(VendorRegistrationService.class);
-
     private final UserRepository usersRepository;
     private final VendorRepository vendorRepository;
     private final MemberRepository memberRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
-    // TODO: Change repository response type
     @Transactional
-    public Map<String, Object> register(User user) {
-        Map<String, Object> result = new HashMap<>();
-        logger.info("開始商家註冊流程，email: {}", user.getEmail());
+    public VendorRegisterResponse register(RegisterRequest request) {
+        String email = request.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email is null");
+        }
+
+        String password = request.getPassword();
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password is null");
+        }
+
+        String confirmPassword = request.getConfirmPassword();
+        if (!password.equals(confirmPassword)) {
+            throw new IllegalArgumentException("Confirming password is not the same as password");
+        }
+
+        Optional<User> userOptional = usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR);
+        if (userOptional.isPresent()) {
+            log.warn("註冊失敗 - 電子郵件已存在: {}", email);
+            throw new HttpClientErrorException(HttpStatus.CONFLICT);
+        }
+
+        log.info("開始商家註冊流程，email: {}", email);
 
         try {
             // 檢查是否已存在相同email的商家帳號
-            Optional<User> existingVendor = usersRepository.findByEmailAndUserRole(user.getEmail(), User.UserRole.VENDOR);
+            Optional<User> existingVendor = usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR);
             if (existingVendor.isPresent()) {
-                logger.warn("註冊失敗：商家帳號已存在，email: {}", user.getEmail());
-                result.put("success", false);
-                result.put("message", "此 email 已註冊為商家");
-                return result;
+                log.warn("註冊失敗：商家帳號已存在，email: {}", email);
+
+                return VendorRegisterResponse.builder()
+                        .success(false)
+                        .message("此 email 已註冊為商家")
+                        .build();
             }
+
+            // 創建用戶基本信息
+            User user = new User();
+
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode(password));
+            user.setUserRole(User.UserRole.VENDOR);
+            user.setProvider(User.Provider.LOCAL);
 
             // 生成驗證令牌
             String token = UUID.randomUUID().toString();
             user.setVerificationToken(token);
             user.setTokenExpiry(LocalDateTime.now().plusHours(24));
-            user.setUserRole(User.UserRole.VENDOR);
-            user.setProvider(User.Provider.LOCAL);
-
-            // 加密密碼
-            String encodedPassword = passwordEncoder.encode(user.getPassword());
-            user.setPassword(encodedPassword);
 
             // 保存用戶
             User savedUser = usersRepository.save(user);
-            logger.info("商家用戶資訊儲存成功，userId: {}", savedUser.getId());
+
+            log.info("商家用戶資訊儲存成功，userId: {}", savedUser.getId());
 
             // 創建商家資料
             Vendor vendor = new Vendor();
@@ -72,24 +98,26 @@ public class VendorRegistrationService {
 
             // 保存商家資料
             Vendor savedVendor = vendorRepository.save(vendor);
-            logger.info("商家詳細資訊儲存成功，vendorId: {}", savedVendor.getId());
+            log.info("商家詳細資訊儲存成功，vendorId: {}", savedVendor.getId());
 
             // 發送驗證郵件
             emailService.sendVerificationEmail(user.getEmail(), token);
-            logger.info("驗證郵件發送成功，email: {}", user.getEmail());
+            log.info("驗證郵件發送成功，email: {}", user.getEmail());
 
-            result.put("success", true);
-            result.put("message", "註冊成功，請查收驗證郵件");
-            result.put("userId", savedUser.getId());
-            result.put("vendorId", savedVendor.getId());
+            return VendorRegisterResponse.builder()
+                    .success(true)
+                    .message("註冊成功，請查收驗證郵件")
+                    .userId(savedUser.getId())
+                    .vendorId(savedVendor.getId())
+                    .build();
         } catch (Exception e) {
-            logger.error("商家註冊過程發生錯誤", e);
+            log.error("商家註冊過程發生錯誤", e);
 
-            result.put("success", false);
-            result.put("message", "註冊失敗：" + e.getMessage());
+            return VendorRegisterResponse.builder()
+                    .success(false)
+                    .message("註冊失敗：" + e.getMessage())
+                    .build();
         }
-
-        return result;
     }
 
     // TODO: Change repository response type
@@ -113,24 +141,19 @@ public class VendorRegistrationService {
                 if (vendor != null) {
                     vendor.setStatus(true);
                     vendorRepository.save(vendor);
-                    logger.info("商家驗證完成，userId: {}", user.getId());
+                    log.info("商家驗證完成，userId: {}", user.getId());
                     return true;
                 } else {
-                    logger.error("商家驗證失敗：找不到商家資料，userId: {}", user.getId());
+                    log.error("商家驗證失敗：找不到商家資料，userId: {}", user.getId());
                 }
             } catch (Exception e) {
-                logger.error("商家驗證過程發生錯誤", e);
+                log.error("商家驗證過程發生錯誤", e);
             }
         } else {
-            logger.warn("商家驗證失敗：驗證碼無效或已過期");
+            log.warn("商家驗證失敗：驗證碼無效或已過期");
         }
 
         return false;
-    }
-
-    public User findByEmail(String email) {
-        return usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR)
-                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
     }
 
     public User findVendorByEmail(String email) {
@@ -148,7 +171,6 @@ public class VendorRegistrationService {
     @Transactional
     public Map<String, Object> convertMemberToVendor(Integer memberId) {
         Map<String, Object> result = new HashMap<>();
-        result.put("success", false);
 
         try {
             // 檢查會員是否存在
@@ -204,7 +226,8 @@ public class VendorRegistrationService {
             result.put("vendorEmail", newVendorUser.getEmail());
             result.put("rawPassword", memberUser.getPassword()); // 返回已加密的密碼供認證使用
         } catch (Exception e) {
-            logger.error("商家轉換過程發生錯誤", e);
+            log.error("商家轉換過程發生錯誤", e);
+            result.put("success", false);
             result.put("message", e.getMessage());
         }
 
