@@ -8,12 +8,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import petTopia.dto.user.request.RegisterRequest;
 import petTopia.dto.user.response.VendorRegisterResponse;
+import petTopia.jwt.JwtUtil;
 import petTopia.model.user.User;
 import petTopia.model.vendor.Vendor;
 import petTopia.model.user.Member;
@@ -31,6 +34,7 @@ public class VendorRegistrationService {
     private final MemberRepository memberRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     @Transactional
     public VendorRegisterResponse register(RegisterRequest request) {
@@ -165,6 +169,155 @@ public class VendorRegistrationService {
         return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER)
                 .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
 
+    }
+
+    @Transactional
+    public Map<String, Object> switchRoleToVendor(String token, Boolean confirm) {
+        log.info("處理會員轉換為商家請求 - 確認狀態: {}", confirm);
+
+        String email = jwtUtil.extractUsername(token);
+        if (!jwtUtil.validateToken(token, email)) {
+            throw new BadCredentialsException("無效的令牌");
+        }
+
+        String role = jwtUtil.extractUserRole(token);
+        if (!"MEMBER".equals(role)) {
+            throw new AuthorizationDeniedException("只有會員可以切換成商家");
+        }
+
+        Integer userId = jwtUtil.extractUserId(token);
+
+        User existingVendor = this.findVendorByEmail(email);
+
+        if (existingVendor != null) {
+            log.info("用戶已有商家帳號，執行切換 - 用戶ID: {}, 電子郵件: {}",
+                    userId, email);
+
+            // 直接生成新的 JWT
+            String newToken = jwtUtil.generateToken(
+                    existingVendor.getEmail(),
+                    existingVendor.getId(),
+                    existingVendor.getUserRole().toString()
+            );
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "已切換至商家帳號");
+            result.put("token", newToken);
+            result.put("vendorId", existingVendor.getId());
+            result.put("email", existingVendor.getEmail());
+            result.put("role", existingVendor.getUserRole().toString());
+
+            return result;
+        }
+
+        if (confirm == null || !confirm) {
+            log.info("用戶需要確認轉換為商家 - 用戶ID: {}", userId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("error", "需要確認轉換");
+            result.put("needConfirm", true);
+            result.put("message", "轉換為商家帳號將創建一個新的商家帳號，請確認是否繼續？");
+
+            return result;
+        }
+
+        log.info("開始轉換會員為商家 - 用戶ID: {}", userId);
+        Map<String, Object> conversionResult = this.convertMemberToVendor(userId);
+
+        if ((Boolean) conversionResult.get("success")) {
+            User newVendor = (User) conversionResult.get("vendorUser");
+            log.info("會員轉換為商家成功 - 會員ID: {}, 新商家ID: {}",
+                    userId, newVendor.getId());
+
+            // 生成新的 JWT，不需要重新認證
+            String newToken = jwtUtil.generateToken(
+                    newVendor.getEmail(),
+                    newVendor.getId(),
+                    newVendor.getUserRole().toString()
+            );
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "商家轉換成功");
+            response.put("token", newToken);
+            response.put("vendorId", newVendor.getId());
+            response.put("email", newVendor.getEmail());
+            response.put("role", newVendor.getUserRole().toString());
+
+            return response;
+        } else {
+            log.error("會員轉換為商家失敗 - 用戶ID: {}, 原因: {}", userId, conversionResult.get("message"));
+            return conversionResult;
+        }
+    }
+
+    public Map<String, Object> checkConversionEligibility(String token) {
+        log.info("檢查用戶是否可以轉換為商家");
+
+        Map<String, Object> result = new HashMap<>();
+
+        String email = jwtUtil.extractUsername(token);
+        if (!jwtUtil.validateToken(token, email)) {
+            throw new BadCredentialsException("無效的令牌");
+        }
+
+        String role = jwtUtil.extractUserRole(token);
+        Integer userId = jwtUtil.extractUserId(token);
+        if ("VENDOR".equals(role)) {
+            log.info("用戶已經是商家 - 用戶ID: {}", userId);
+
+            result.put("eligible", false);
+            result.put("message", "您已經是商家帳號");
+
+            return result;
+        }
+
+        User existingVendor = this.findVendorByEmail(email);
+
+        if (existingVendor != null) {
+            log.info("用戶已有商家帳號 - 用戶ID: {}, 商家ID: {}", userId, existingVendor.getId());
+
+            result.put("eligible", true);
+            result.put("hasExistingAccount", true);
+            result.put("message", "您已有商家帳號，可以直接切換");
+        } else {
+            log.info("用戶符合商家轉換資格 - 用戶ID: {}", userId);
+
+            result.put("eligible", true);
+            result.put("hasExistingAccount", false);
+            result.put("message", "您可以轉換為商家帳號");
+        }
+
+        return result;
+    }
+
+    public Map<String, Object> switchRoleBackToMember(String token) {
+        String email = jwtUtil.extractUsername(token);
+        if (!jwtUtil.validateToken(token, email)) {
+            throw new BadCredentialsException("無效的令牌");
+        }
+
+        String role = jwtUtil.extractUserRole(token);
+        if (!"VENDOR".equals(role)) {
+            throw new AuthorizationDeniedException("只有商家可以切換回會員");
+        }
+
+        User memberUser = usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER)
+                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
+
+        String newToken = jwtUtil.generateToken(
+                memberUser.getEmail(),
+                memberUser.getId(),
+                memberUser.getUserRole().toString()
+        );
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "已切換回會員帳號");
+        response.put("token", newToken);
+        response.put("userId", memberUser.getId());
+        response.put("email", memberUser.getEmail());
+        response.put("role", memberUser.getUserRole().toString());
+
+        return response;
     }
 
     // TODO: Change repository response type

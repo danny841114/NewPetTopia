@@ -37,10 +37,8 @@ public class VendorLoginController {
     @GetMapping("/profile")
     public ResponseEntity<Map<String, Object>> getVendorProfile() {
         Authentication authentication = getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "請先登入"));
-        }
+        ResponseEntity<Map<String, Object>> UNAUTHORIZED = checkAuth(authentication);
+        if (UNAUTHORIZED != null) return UNAUTHORIZED;
 
         Map<String, Object> vendorInfo = vendorService.getVendorInfo(authentication.getName());
         return ResponseEntity.ok(vendorInfo);
@@ -57,9 +55,8 @@ public class VendorLoginController {
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getLoginStatus() {
         Authentication authentication = getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.ok(Map.of("isLoggedIn", false));
-        }
+        ResponseEntity<Map<String, Object>> UNAUTHORIZED = checkAuth(authentication);
+        if (UNAUTHORIZED != null) return UNAUTHORIZED;
 
         Map<String, Object> vendorInfo = vendorService.getVendorInfo(authentication.getName());
         return ResponseEntity.ok(vendorInfo);
@@ -71,10 +68,8 @@ public class VendorLoginController {
     @GetMapping("/convert/check")
     public ResponseEntity<?> checkVendorEligibility() {
         Authentication authentication = getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "請先登入"));
-        }
+        ResponseEntity<Map<String, Object>> UNAUTHORIZED = checkAuth(authentication);
+        if (UNAUTHORIZED != null) return UNAUTHORIZED;
 
         VendorEligibilityResponse response = vendorService.checkVendorEligibility(authentication.getName());
         return ResponseEntity.ok(response);
@@ -86,10 +81,8 @@ public class VendorLoginController {
     @PostMapping("/convert")
     public ResponseEntity<Map<String, Object>> convertToVendor() {
         Authentication authentication = getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "請先登入"));
-        }
+        ResponseEntity<Map<String, Object>> UNAUTHORIZED = checkAuth(authentication);
+        if (UNAUTHORIZED != null) return UNAUTHORIZED;
 
         Map<String, Object> result = vendorService.convertToVendor(authentication.getName());
         return (Boolean) result.get("success")
@@ -99,5 +92,14 @@ public class VendorLoginController {
 
     private Authentication getAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
+    }
+
+    private ResponseEntity<Map<String, Object>> checkAuth(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "請先登入"));
+        }
+
+        return null;
     }
 }

@@ -8,9 +8,11 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import petTopia.dto.user.request.ChangePasswordRequest;
 import petTopia.dto.user.request.UpdateProfile;
 import petTopia.model.user.Member;
 import petTopia.model.user.User;
@@ -25,7 +27,8 @@ import petTopia.util.StringHelper;
 @Service
 public class MemberService {
     private final MemberRepository memberRepository;
-    private final UserRepository usersRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public Member createOrUpdateMember(Member member) {
@@ -37,7 +40,7 @@ public class MemberService {
             throw new IllegalArgumentException("Member ID and User ID are not match");
         }
 
-        User user = usersRepository.findById(member.getId())
+        User user = userRepository.findById(member.getId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         member.setUser(user);
@@ -116,5 +119,24 @@ public class MemberService {
             log.warn("Photo is null, no updates will be executed.");
             throw new BadRequestException("Photo is null");
         }
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        String email = request.getEmail();
+        String newPassword = request.getNewPassword();
+
+        if (email == null || newPassword == null) {
+            throw new IllegalArgumentException("電子郵件和密碼不能為空");
+        }
+
+        User user = userRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER)
+                .orElseThrow(() -> new EntityNotFoundException("User with email '%s' not found".formatted(email)));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        userRepository.save(user);
+
+        log.info("用戶 {} 密碼更改成功", email);
     }
 }

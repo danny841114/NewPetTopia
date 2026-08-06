@@ -6,25 +6,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import petTopia.dto.user.response.CheckEmailResponse;
 import petTopia.model.user.User;
 import petTopia.model.user.Member;
 import petTopia.repository.user.UserRepository;
 import petTopia.repository.user.MemberRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import jakarta.persistence.EntityManager;
 
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class RegistrationService {
-    private static final Logger logger = LoggerFactory.getLogger(RegistrationService.class);
-
     private final UserRepository usersRepository;
     private final MemberRepository memberRepository;
     private final EmailService emailService;
@@ -60,7 +58,7 @@ public class RegistrationService {
             // 使用 EntityManager 保存用戶
             entityManager.persist(user);
             entityManager.flush();
-            logger.info("會員用戶資訊儲存成功，userId: {}", user.getId());
+            log.info("會員用戶資訊儲存成功，userId: {}", user.getId());
 
             // 創建會員資料
             Member member = new Member();
@@ -74,18 +72,18 @@ public class RegistrationService {
             // 使用 EntityManager 保存會員資料
             entityManager.persist(member);
             entityManager.flush();
-            logger.info("會員詳細資訊儲存成功，memberId: {}", member.getId());
+            log.info("會員詳細資訊儲存成功，memberId: {}", member.getId());
 
             // 發送驗證郵件
             emailService.sendVerificationEmail(user.getEmail(), code);
-            logger.info("驗證郵件發送成功，email: {}", user.getEmail());
+            log.info("驗證郵件發送成功，email: {}", user.getEmail());
 
             result.put("success", true);
             result.put("message", "註冊成功，請查收驗證郵件");
             result.put("userId", user.getId());
             result.put("memberId", member.getId());
         } catch (Exception e) {
-            logger.error("會員註冊過程發生錯誤", e);
+            log.error("會員註冊過程發生錯誤", e);
             result.put("success", false);
             result.put("message", "註冊失敗：" + e.getMessage());
         }
@@ -112,7 +110,7 @@ public class RegistrationService {
             if (member != null) {
                 member.setStatus(true);
                 memberRepository.save(member);
-                logger.info("會員驗證完成，userId: {}", user.getId());
+                log.info("會員驗證完成，userId: {}", user.getId());
                 return true;
             }
         }
@@ -120,17 +118,53 @@ public class RegistrationService {
         return false;
     }
 
-    // TODO: modify repository response type
     public User findByEmail(String email) {
         // 查找任何類型的帳號（會員、商家、本地、Google）
-        return usersRepository.findByEmailAndUserRole(email.toLowerCase().trim(), User.UserRole.MEMBER)
-                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
+        String trimmedEmail = email.toLowerCase().trim();
+        return usersRepository.findByEmailAndUserRole(trimmedEmail, User.UserRole.MEMBER)
+                .orElse(null);
     }
 
     @Transactional
-    public User updateUser(User user) {
+    public void updateUser(User user) {
         // 保存用戶信息
-        logger.info("更新用戶信息，userId: {}", user.getId());
-        return usersRepository.save(user);
+        log.info("更新用戶信息，userId: {}", user.getId());
+        usersRepository.save(user);
+    }
+
+    public CheckEmailResponse checkEmailIsRegistered(String email) {
+        log.info("檢查 email 是否已存在 - email: {}", email);
+
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("檢查 email 失敗 - email 為空");
+        }
+
+        User existingUser = this.findByEmail(email);
+        if (existingUser != null) {
+            String message;
+            if (existingUser.getProvider() == User.Provider.GOOGLE) {
+                message = "此 email 已使用 Google 帳號登入過，請點擊「使用 Google 登入」按鈕";
+            } else if (existingUser.getUserRole() == User.UserRole.VENDOR) {
+                message = "此 email 已註冊為商家帳號，請使用其他 email 註冊會員";
+            } else {
+                message = "此 email 已註冊為會員帳號，請直接登入";
+            }
+
+            log.info("Email 已存在 - email: {}, 用戶類型: {}", email, existingUser.getUserRole());
+
+            return CheckEmailResponse.builder()
+                    .exists(true)
+                    .message(message)
+                    .userRole(existingUser.getUserRole())
+                    .provider(existingUser.getProvider())
+                    .build();
+        } else {
+            log.info("Email 可用 - email: {}", email);
+
+            return CheckEmailResponse.builder()
+                    .exists(true)
+                    .message("此 email 可用於註冊")
+                    .build();
+        }
     }
 }

@@ -151,7 +151,7 @@ public class MemberLoginService {
 
     public User findByEmail(String email) {
         return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER)
-                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
+                .orElseThrow(() -> new EntityNotFoundException("User with email '%s' not found".formatted(email)));
     }
 
     public User findById(Integer id) {

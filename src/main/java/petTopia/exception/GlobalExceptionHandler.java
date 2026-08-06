@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -112,6 +113,20 @@ public class GlobalExceptionHandler {
         CustomErrorResponse response = CustomErrorResponse.builder()
                 .status(HttpStatus.FORBIDDEN.value())
                 .code("FORBIDDEN")
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<CustomErrorResponse> handleDeniedAuthorization(AuthorizationDeniedException ex) {
+        log.error("AUTHORIZATION DENIED", ex);
+
+        CustomErrorResponse response = CustomErrorResponse.builder()
+                .status(HttpStatus.FORBIDDEN.value())
+                .code("AUTHORIZATION_DENIED")
                 .message(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
