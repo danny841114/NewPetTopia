@@ -30,7 +30,7 @@ public class MemberController {
                 .getAuthentication()
                 .getName();
 
-        User user = memberLoginService.findByEmail(email);
+        User user = memberLoginService.findByEmailIfAbsentThrowException(email);
 
         return memberService.getMemberById(user.getId());
     }
@@ -39,7 +39,9 @@ public class MemberController {
     public ResponseEntity<?> getProfile() {
         try {
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            User user = memberLoginService.findByEmail(email);
+
+            User user = memberLoginService.findByEmailIfAbsentThrowException(email);
+
             Member member = memberService.getMemberById(user.getId());
 
             // 檢查名稱是否為郵箱格式，如果是則嘗試使用更友好的格式

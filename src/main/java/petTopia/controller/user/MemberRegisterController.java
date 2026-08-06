@@ -64,29 +64,22 @@ public class MemberRegisterController {
                         .body(Map.of("error", "此 email 已註冊為會員"));
             }
 
-            // 創建用戶基本信息
-            User newUser = new User();
-            newUser.setEmail(email);
-            newUser.setPassword(password);
-            newUser.setUserRole(User.UserRole.MEMBER);
-            newUser.setProvider(User.Provider.LOCAL);
-
             // 使用註冊服務處理註冊
-            Map<String, Object> result = registrationService.register(newUser);
+            Map<String, Object> result = registrationService.register(email, password);
 
             if ((Boolean) result.get("success")) {
                 logger.info("會員註冊成功 - 電子郵件: {}", email);
-                return ResponseEntity.status(HttpStatus.CREATED)
-                        .body(Map.of(
-                                "message", "註冊成功，請查收驗證郵件後登入",
-                                "email", email
-                        ));
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "註冊成功，請查收驗證郵件後登入");
+                response.put("email", email);
+
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
             } else {
                 logger.warn("註冊失敗 - {}", result.get("message"));
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", result.get("message")));
             }
-
         } catch (Exception e) {
             logger.error("註冊過程發生異常 - 電子郵件: {}", email, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

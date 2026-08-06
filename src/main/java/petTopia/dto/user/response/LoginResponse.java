@@ -1,5 +1,6 @@
 package petTopia.dto.user.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import petTopia.model.user.User;
 
@@ -8,6 +9,7 @@ import petTopia.model.user.User;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class LoginResponse {
     private String message;
     private String token;

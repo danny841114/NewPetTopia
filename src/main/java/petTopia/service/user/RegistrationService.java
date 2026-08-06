@@ -30,24 +30,27 @@ public class RegistrationService {
     private final EntityManager entityManager;
 
     @Transactional
-    public Map<String, Object> register(User user) {
+    public Map<String, Object> register(String email, String password) {
         Map<String, Object> result = new HashMap<>();
-        String email = user.getEmail().toLowerCase().trim();
 
         try {
+            User user = new User();
+
             // 檢查郵箱是否已存在
-            if (findByEmail(email) != null) {
+            String trimmedEmail = email.toLowerCase().trim();
+            if (findByEmail(trimmedEmail) != null) {
                 result.put("success", false);
                 result.put("message", "此 email 已註冊為會員");
                 return result;
             }
-
-            user.setEmail(email);
+            user.setEmail(trimmedEmail);
 
             // 生成6位數驗證碼
             String code = String.format("%06d", new Random().nextInt(1000000));
             user.setVerificationToken(code);
             user.setTokenExpiry(LocalDateTime.now().plusMinutes(5));
+
+            // 身分屬性
             user.setUserRole(User.UserRole.MEMBER);
             user.setProvider(User.Provider.LOCAL);
 

@@ -3,7 +3,6 @@ package petTopia.service.user;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -11,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.view.RedirectView;
 import petTopia.dto.user.request.LoginRequest;
 import petTopia.dto.user.response.LoginResponse;
 import petTopia.dto.user.response.LoginStatus;
@@ -21,8 +21,6 @@ import petTopia.repository.user.UserRepository;
 import petTopia.repository.user.MemberRepository;
 import petTopia.util.StringHelper;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -36,6 +34,10 @@ public class MemberLoginService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final MemberService memberService;
+
+    // 前端應用的URL
+    // TODO: move to application.properties
+    private static final String FRONTEND_URL = "http://localhost:5173";
 
     @Transactional
     public LoginResponse memberLogin(LoginRequest request) {
@@ -149,13 +151,38 @@ public class MemberLoginService {
         }
     }
 
-    public User findByEmail(String email) {
-        return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER)
-                .orElseThrow(() -> new EntityNotFoundException("User with email '%s' not found".formatted(email)));
+    public RedirectView oauth2Callback(String email) {
+        try {
+            User user = usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER).orElse(null);
+
+            String token = user != null
+                    ? jwtUtil.generateToken(email, user.getId(), user.getUserRole().toString())
+                    : null;
+
+            boolean isNewUser = (user == null);
+
+            StringBuilder redirectUrl = new StringBuilder(FRONTEND_URL);
+            redirectUrl.append("/login?oauth2Success=true");
+            redirectUrl.append("&token=").append(token);
+            redirectUrl.append("&userId=").append(isNewUser ? null : user.getId());
+            redirectUrl.append("&email=").append(email);
+            redirectUrl.append("&role=").append(isNewUser ? null : user.getUserRole().toString());
+            if (isNewUser) redirectUrl.append("&newUser=true");
+
+            return new RedirectView(redirectUrl.toString());
+        } catch (Exception e) {
+            // 處理錯誤情況，重定向到帶有錯誤信息的登入頁面
+            return new RedirectView(FRONTEND_URL + "/login?error=true&message=" + e.getMessage());
+        }
     }
 
-    public User findById(Integer id) {
-        return usersRepository.findById(id).orElse(null);
+    public User findByEmail(String email) {
+        return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER).orElse(null);
+    }
+
+    public User findByEmailIfAbsentThrowException(String email) {
+        return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 
     public LoginStatus getLoginStatus(String token) {

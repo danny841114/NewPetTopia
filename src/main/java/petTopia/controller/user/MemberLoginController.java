@@ -5,15 +5,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import petTopia.dto.user.request.LoginRequest;
 import petTopia.dto.user.response.LoginResponse;
 import petTopia.dto.user.response.LoginStatus;
 import petTopia.service.user.MemberLoginService;
-import petTopia.jwt.JwtUtil;
-import petTopia.service.user.MemberService;
 
 import java.util.Map;
 
@@ -22,10 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class MemberLoginController {
-    private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
     private final MemberLoginService memberLoginService;
-    private final MemberService memberService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest credentials) {
