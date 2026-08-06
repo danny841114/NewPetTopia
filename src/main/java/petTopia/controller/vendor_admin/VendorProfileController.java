@@ -1,6 +1,7 @@
 package petTopia.controller.vendor_admin;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -8,10 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import petTopia.dto.vendor_admin.request.UpdateVendorRequest;
-import petTopia.dto.vendor_admin.response.UpdateVendorResponse;
 import petTopia.dto.vendor_admin.response.VendorProfile;
 import petTopia.model.vendor.Vendor;
 import petTopia.service.vendor_admin.VendorProfileService;
@@ -34,7 +32,6 @@ public class VendorProfileController {
     }
 
     // TODO:
-    //  CHANGE RESPONSE TO DTO
     //  CHANGE RESPONSE DATA
     @GetMapping("api/vendor_admin/profile/{id}")
     public ResponseEntity<Map<String, Object>> getVendor(@PathVariable Integer id) {
@@ -48,43 +45,18 @@ public class VendorProfileController {
         return ResponseEntity.ok(vendorProfile);
     }
 
-    // TODO:
-    //  CHANGE RESPONSE TO DTO
-    //  CHANGE RESPONSE DATA
-    @PostMapping("/api/vendor/update/{vendorId}")
-    public ResponseEntity<UpdateVendorResponse> updateVendor(@PathVariable Integer vendorId,
-                                                             @RequestParam(required = false) String vendorName,
-                                                             @RequestParam(required = false) String contactEmail,
-                                                             @RequestParam(required = false) String vendorPhone,
-                                                             @RequestParam(required = false) String vendorAddress,
-                                                             @RequestParam(required = false) String vendorDescription,
-                                                             @RequestParam(required = false) String contactPerson,
-                                                             @RequestParam(required = false) String vendorTaxidNumber,
-                                                             @RequestParam(required = false) Integer category,
-                                                             @RequestParam(required = false) MultipartFile vendorLogoImg,
-                                                             @RequestParam(value = "files", required = false) MultipartFile[] files,
-                                                             @RequestParam(value = "deletedImageIds", required = false) List<Integer> deletedImageIds) throws IOException {
-
-        UpdateVendorRequest request = new UpdateVendorRequest();
-
-        request.setVendorName(vendorName);
-        request.setContactEmail(contactEmail);
-        request.setVendorPhone(vendorPhone);
-        request.setVendorAddress(vendorAddress);
-        request.setVendorDescription(vendorDescription);
-        request.setContactPerson(contactPerson);
-        request.setVendorTaxIdNumber(vendorTaxidNumber);
-        request.setCategoryId(category);
-        request.setVendorLogoImg(vendorLogoImg);
-        request.setFiles(files);
-        request.setDeletedImageIds(deletedImageIds);
-
+    // TODO: 2026-08-06 Modify API spec, front-end not fixed
+    //  POST TO PUT
+    //  REQUEST PARAM TO BODY
+    //  Unify parameters naming to camel case
+    @PutMapping("/api/vendor/update/{vendorId}")
+    public ResponseEntity<HashMap<String, Object>> updateVendor(@PathVariable Integer vendorId,
+                                                                @RequestBody UpdateVendorRequest request) throws IOException {
         Vendor savedVendor = vendorProfileService.updateVendor(vendorId, request);
 
-        UpdateVendorResponse response = UpdateVendorResponse.builder()
-                .success(true)
-                .vendor(savedVendor)
-                .build();
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("vendor", savedVendor);
 
         return ResponseEntity.ok(response);
     }

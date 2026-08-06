@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import petTopia.dto.vendor_admin.request.AddReviewRequest;
 import petTopia.model.vendor.ReviewPhoto;
 import petTopia.model.vendor.VendorReview;
@@ -41,30 +40,32 @@ public class VendorReviewsController {
     }
 
     @GetMapping("/review_photos/ids")
-    public ResponseEntity<?> findPhotoIds(@RequestParam Integer vendorReviewId) {
+    public ResponseEntity<List<Integer>> findPhotoIds(@RequestParam Integer vendorReviewId) {
         List<Integer> photoIds = vendorReviewsService.findPhotoIdsByReviewId(vendorReviewId);
         return ResponseEntity.ok(photoIds);
     }
 
     @GetMapping("/review_photos/download")
-    public ResponseEntity<?> downloadPhoto(@RequestParam Integer photoId) {
+    public ResponseEntity<byte[]> downloadPhoto(@RequestParam Integer photoId) {
         byte[] photoByteArray = vendorReviewsService.downloadPhotoById(photoId);
         return ResponseEntity.ok()
                 .headers(HeadersUtil.createHeadersWithMediaTypeJpg())
                 .body(photoByteArray);
     }
 
-    // TODO: API REQUEST BODY to MODEL ATTRIBUTE
+    // TODO:
+    //  API Request body to model attribute
+    //  Response headers need to point to new source
     @PostMapping("/api/vendor_admin/review/add")
-    public ResponseEntity<?> addReview(@RequestBody AddReviewRequest request,
-                                       @RequestPart(value = "photo", required = false) MultipartFile photo) throws IOException {
+    public ResponseEntity<Void> addReview(@RequestBody AddReviewRequest request,
+                                          @RequestPart(value = "photo", required = false) MultipartFile photo) throws IOException {
         vendorReviewsService.addReview(request, photo);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     // TODO: API RESPONSE SHOULD CHANGE
     @DeleteMapping("/api/vendor_admin/review/delete/{reviewId}")
-    public ResponseEntity<?> deleteReview(@PathVariable Integer reviewId) {
+    public ResponseEntity<Map<String, String>> deleteReview(@PathVariable Integer reviewId) {
         vendorReviewsService.deleteReview(reviewId);
         return ResponseEntity.ok(Map.of("message", "刪除成功"));
     }

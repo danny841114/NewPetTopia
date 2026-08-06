@@ -5,7 +5,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import petTopia.dto.vendor_admin.CertificationDTO;
 import petTopia.model.vendor.VendorCertification;
 import petTopia.service.vendor_admin.VendorCertificationService;

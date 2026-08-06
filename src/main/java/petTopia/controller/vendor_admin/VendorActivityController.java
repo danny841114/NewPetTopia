@@ -1,18 +1,14 @@
 package petTopia.controller.vendor_admin;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import petTopia.dto.vendor_admin.TopActivityDTO;
 import petTopia.dto.vendor_admin.request.AddActivityRequest;
 import petTopia.dto.vendor_admin.request.UpdateActivityRequest;
@@ -40,12 +36,11 @@ public class VendorActivityController {
 
     // TODO: should modify response body
     @GetMapping("/vendor_admin_activityDetail")
-    public ResponseEntity<?> getVendorActivityDetail(@RequestParam Integer id) {
+    public ResponseEntity<ActivityDetailResponse> getVendorActivityDetail(@RequestParam Integer id) {
         ActivityDetailResponse activityDetail = vendorActivityServiceAdmin.getActivityDetail(id);
-
-        if (activityDetail == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("活動不存在");
-
-        return ResponseEntity.ok(activityDetail);
+        return activityDetail != null
+                ? ResponseEntity.ok(activityDetail)
+                : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/activity/allTypes")
@@ -71,80 +66,32 @@ public class VendorActivityController {
         return ResponseEntity.ok(conflictExists);
     }
 
-    // TODO:
+    // TODO: 2026-08-06 Modify API spec, front-end not fixed
     //  REQUEST PARAM TO BODY
+    //  CREATED need to guide to source
     @PostMapping("/add")
-    public ResponseEntity<?> addActivity(@RequestParam("vendor_id") Integer vendorId,
-                                         @RequestParam("activity_name") String activityName,
-                                         @RequestParam("activity_type_id") ActivityType typeId,
-                                         @RequestParam("activity_description") String description,
-                                         @RequestParam("activity_address") String address,
-                                         @RequestParam("start_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date startTime,
-                                         @RequestParam("end_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date endTime,
-                                         @RequestParam("is_registration_required") String isRegistrationRequired,
-                                         @RequestParam("max_participants") Integer maxParticipants,
-                                         @RequestParam("files") MultipartFile[] files) throws IOException {
-        AddActivityRequest request = new AddActivityRequest();
-        request.setVendorId(vendorId);
-        request.setActivityName(activityName);
-        request.setTypeId(typeId);
-        request.setDescription(description);
-        request.setAddress(address);
-        request.setStartTime(startTime);
-        request.setEndTime(endTime);
-        request.setIsRegistrationRequired(isRegistrationRequired);
-        request.setMaxParticipants(maxParticipants);
-        request.setFiles(files);
-
+    public ResponseEntity<Void> addActivity(@RequestBody AddActivityRequest request) throws IOException {
         vendorActivityServiceAdmin.addActivity(request);
-
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    // TODO:
+    // TODO: 2026-08-06 Modify API spec, front-end not fixed
     //  POST TO PUT
     //  REQUEST PARAM TO BODY
-    @PostMapping("/update")
-    public ResponseEntity<?> updateActivity(@RequestParam("activity_id") Integer activityId,
-                                            @RequestParam("vendor_id") Integer vendorId,
-                                            @RequestParam("activity_name") String activityName,
-                                            @RequestParam("activity_type_id") ActivityType typeId,
-                                            @RequestParam("activity_description") String description,
-                                            @RequestParam("activity_address") String address,
-                                            @RequestParam("start_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date startTime,
-                                            @RequestParam("end_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date endTime,
-                                            @RequestParam("is_registration_required") String isRegistrationRequired,
-                                            @RequestParam("max_participants") Integer maxParticipants,
-                                            @RequestParam(value = "files", required = false) MultipartFile[] files,
-                                            @RequestParam(value = "deletedImageIds", required = false) List<Integer> deletedImageIds) throws IOException {
-        UpdateActivityRequest request = new UpdateActivityRequest();
-        request.setActivityId(activityId);
-        request.setVendorId(vendorId);
-        request.setActivityName(activityName);
-        request.setTypeId(typeId);
-        request.setDescription(description);
-        request.setAddress(address);
-        request.setStartTime(startTime);
-        request.setEndTime(endTime);
-        request.setIsRegistrationRequired(isRegistrationRequired);
-        request.setMaxParticipants(maxParticipants);
-        request.setFiles(files);
-        request.setDeletedImageIds(deletedImageIds);
-
+    //  Unify parameters naming to camel case
+    @PutMapping("/update")
+    public ResponseEntity<CalendarEvent> updateActivity(@RequestBody UpdateActivityRequest request) throws IOException {
         CalendarEvent calendarEvent = vendorActivityServiceAdmin.updateActivity(request);
-
         return ResponseEntity.ok(calendarEvent);
     }
 
     @GetMapping("/activity/{vendorId}")
     public ResponseEntity<List<VendorActivity>> getVendorActivitiesByVendorId(@PathVariable Integer vendorId) {
         List<VendorActivity> activities = vendorActivityServiceAdmin.getVendorActivityByVendorId(vendorId);
-
-        if (activities.isEmpty()) return ResponseEntity.notFound().build();
-
-        return ResponseEntity.ok(activities);
+        return activities.isEmpty()
+                ? ResponseEntity.notFound().build()
+                : ResponseEntity.ok(activities);
     }
-
 
     // TODO: the endpoints below are different
 
@@ -155,7 +102,7 @@ public class VendorActivityController {
     }
 
     @GetMapping("/photos/download")
-    public ResponseEntity<?> downloadPhotoById(@RequestParam Integer photoId) {
+    public ResponseEntity<byte[]> downloadPhotoById(@RequestParam Integer photoId) {
         byte[] photo = vendorActivityServiceAdmin.getPhotoById(photoId);
         return ResponseEntity.ok()
                 .headers(HeadersUtil.createHeadersWithMediaTypeJpg())
@@ -163,13 +110,13 @@ public class VendorActivityController {
     }
 
     @GetMapping("/photos/ids")
-    public ResponseEntity<?> findPhotoIdsByVendorActivityId(@RequestParam Integer vendorActivityId) {
+    public ResponseEntity<List<Integer>> findPhotoIdsByVendorActivityId(@RequestParam Integer vendorActivityId) {
         List<Integer> photoIds = vendorActivityServiceAdmin.getPhotoIdsByActivityId(vendorActivityId);
         return ResponseEntity.ok(photoIds);
     }
 
     @GetMapping("/photos/idss")
-    public ResponseEntity<?> findPhotoIdsByVendorActivityIds(@RequestParam List<Integer> vendorActivityIds) {
+    public ResponseEntity<List<Map<String, Object>>> findPhotoIdsByVendorActivityIds(@RequestParam List<Integer> vendorActivityIds) {
         List<Map<String, Object>> response = vendorActivityServiceAdmin.findPhotoIdsByActivityIds(vendorActivityIds);
         return ResponseEntity.ok(response);
     }

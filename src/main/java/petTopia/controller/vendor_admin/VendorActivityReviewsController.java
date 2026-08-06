@@ -6,7 +6,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import petTopia.dto.vendor.ActivityReviewDto;
 import petTopia.service.vendor.VendorActivityReviewService;
 
@@ -23,7 +22,7 @@ public class VendorActivityReviewsController {
     }
 
     @DeleteMapping("/activityreviews/delete/{reviewId}")
-    public ResponseEntity<?> deleteReview(@PathVariable Integer reviewId) {
+    public ResponseEntity<Map<String, String>> deleteReview(@PathVariable Integer reviewId) {
         vendorActivityReviewService.deleteReviewById(reviewId);
         return ResponseEntity.ok(Map.of("message", "刪除成功"));
     }

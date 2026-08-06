@@ -1,15 +1,12 @@
 package petTopia.controller.vendor_admin;
 
-import java.util.Date;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import petTopia.dto.vendor_admin.request.AddCalendarEventRequest;
 import petTopia.dto.vendor_admin.request.UpdateCalendarEventRequest;
 import petTopia.model.vendor.CalendarEvent;
@@ -27,45 +24,28 @@ public class VendorCalendarEventController {
         return ResponseEntity.ok(calenderEvents);
     }
 
-    // TODO: REQUEST PARAM TO BODY
+    // TODO: 2026-08-06 Modify API spec, front-end not fixed
+    //  REQUEST PARAM TO BODY
+    //  Unify parameters naming to camel case
+    //  CREATED need to guide to source
     @PostMapping("/api/vendor_admin/calendar/add")
-    public ResponseEntity<?> addCalendarEvent(@RequestParam Integer vendorId,
-                                              @RequestParam String eventTitle,
-                                              @RequestParam("start_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date startTime,
-                                              @RequestParam("end_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date endTime,
-                                              @RequestParam String color) {
-        AddCalendarEventRequest request = new AddCalendarEventRequest();
-
-        request.setVendorId(vendorId);
-        request.setEventTitle(eventTitle);
-        request.setStartTime(startTime);
-        request.setEndTime(endTime);
-        request.setColor(color);
-
+    public ResponseEntity<CalendarEvent> addCalendarEvent(@RequestBody AddCalendarEventRequest request) {
         CalendarEvent calendarEvent = vendorCalendarEventService.addCalendarEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(calendarEvent);
     }
 
-    // TODO: REQUEST PARAM TO BODY
+    // TODO: 2026-08-06 Modify API spec, front-end not fixed
+    //  REQUEST PARAM TO BODY
+    //  Unify parameters naming to camel case
     @PutMapping("/api/vendor_admin/calendar/update/{id}")
-    public ResponseEntity<?> updateCalendar(@PathVariable Integer id,
-                                            @RequestParam(required = false) String eventTitle,
-                                            @RequestParam("start_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date startTime,
-                                            @RequestParam("end_time") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") Date endTime,
-                                            @RequestParam(required = false) String color) {
-        UpdateCalendarEventRequest request = new UpdateCalendarEventRequest();
-
-        request.setEventTitle(eventTitle);
-        request.setStartTime(startTime);
-        request.setEndTime(endTime);
-        request.setColor(color);
-
+    public ResponseEntity<CalendarEvent> updateCalendar(@PathVariable Integer id,
+                                                        @RequestBody UpdateCalendarEventRequest request) {
         CalendarEvent calendarEvent = vendorCalendarEventService.updateCalendar(id, request);
         return ResponseEntity.ok(calendarEvent);
     }
 
     @DeleteMapping("/api/vendor_admin/calendar/delete/{id}")
-    public ResponseEntity<?> deleteCalendar(@PathVariable Integer id) {
+    public ResponseEntity<Void> deleteCalendar(@PathVariable Integer id) {
         vendorCalendarEventService.deleteCalendarById(id);
         return ResponseEntity.noContent().build();
     }

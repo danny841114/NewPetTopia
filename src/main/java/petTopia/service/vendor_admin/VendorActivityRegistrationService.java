@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
+import petTopia.dto.vendor_admin.request.NotificationRequest;
 import petTopia.model.vendor.ActivityPeopleNumber;
 import petTopia.model.vendor.ActivityRegistration;
 import petTopia.model.vendor.Notification;
@@ -89,16 +90,17 @@ public class VendorActivityRegistrationService {
     }
 
     @Transactional
-    public void sendNotification(Integer memberId, Integer activityId, String title, String content) {
-        ActivityRegistration registration = activityRegistrationRepository.findByMemberIdAndVendorActivityId(memberId, activityId)
+    public void sendNotification(Integer memberId, NotificationRequest request) {
+        ActivityRegistration registration = activityRegistrationRepository.findByMemberIdAndVendorActivityId(memberId, request.getActivityId())
                 .orElseThrow(() -> new EntityNotFoundException("Activity registration not found"));
 
         Notification notification = new Notification();
+
         notification.setMember(registration.getMember());
         notification.setVendor(registration.getVendorActivity().getVendor());
         notification.setVendorActivity(registration.getVendorActivity());
-        notification.setNotificationTitle(title);
-        notification.setNotificationContent(content);
+        notification.setNotificationTitle(request.getTitle());
+        notification.setNotificationContent(request.getContent());
 
         notificationRepository.save(notification);
     }
