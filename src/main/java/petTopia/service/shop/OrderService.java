@@ -25,6 +25,7 @@ import petTopia.dto.shop.OrderHistoryDto;
 import petTopia.dto.shop.OrderItemDto;
 import petTopia.dto.shop.OrderSummaryAmountDto;
 import petTopia.dto.shop.request.OrderHistoryRequest;
+import petTopia.dto.shop.request.ProcessCheckout;
 import petTopia.model.shop.Cart;
 import petTopia.model.shop.Coupon;
 import petTopia.model.shop.Order;
@@ -46,11 +47,13 @@ import petTopia.repository.shop.PaymentCategoryRepository;
 import petTopia.repository.shop.PaymentRepository;
 import petTopia.repository.shop.ShippingCategoryRepository;
 import petTopia.repository.shop.ShippingRepository;
+import petTopia.repository.user.MemberRepository;
 
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class OrderService {
+    private final MemberRepository memberRepo;
     private final CouponRepository couponRepo;
     private final CartService cartService;
     private final CartRepository cartRepo;
@@ -109,17 +112,30 @@ public class OrderService {
 
     //新增訂單
     @Transactional
-    public Order createOrder(Member member,
-                                           Integer memberId,
-                                           Integer couponId,
-                                           Integer shippingCategoryId,
-                                           Integer paymentCategoryId,
-                                           BigDecimal paymentAmount,
-                                           String street,
-                                           String city,
-                                           String receiverName,
-                                           String receiverPhone,
-                                           List<Integer> productIds) {
+    public Order createOrder(ProcessCheckout checkoutData, Integer memberId) {
+        Member member = memberRepo.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+
+        // 從 checkoutData 取得各種資料
+        Integer couponId = checkoutData.getCouponId();
+        Integer shippingCategoryId = checkoutData.getShippingCategoryId();
+        Integer paymentCategoryId = checkoutData.getPaymentCategoryId();
+
+        // 取得購物車內的商品 ID 清單
+        List<Integer> productIds = checkoutData.getCartItems()
+                .stream()
+                .map(ProcessCheckout.CartItem::getProductId)
+                .collect(Collectors.toList());
+
+        // 收件人資訊
+        String receiverName = checkoutData.getReceiverName();
+        String receiverPhone = checkoutData.getReceiverPhone();
+        String street = checkoutData.getStreet();
+        String city = checkoutData.getCity();
+        String amount = checkoutData.getPaymentAmount();
+
+        BigDecimal paymentAmount = (amount != null) ? new BigDecimal(amount) : null;
+
 
         // 查詢會員購物車中這些商品
         List<Cart> cartItems = cartRepo.findByMemberIdAndProductIdIn(memberId, productIds);

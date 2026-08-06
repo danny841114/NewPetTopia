@@ -6,9 +6,7 @@ import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,6 +15,7 @@ import petTopia.dto.vendor_admin.request.AddReviewRequest;
 import petTopia.model.vendor.ReviewPhoto;
 import petTopia.model.vendor.VendorReview;
 import petTopia.service.vendor_admin.VendorReviewsServiceAdmin;
+import petTopia.util.HeadersUtil;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -50,11 +49,9 @@ public class VendorReviewsController {
     @GetMapping("/review_photos/download")
     public ResponseEntity<?> downloadPhoto(@RequestParam Integer photoId) {
         byte[] photoByteArray = vendorReviewsService.downloadPhotoById(photoId);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_JPEG);
-
-        return ResponseEntity.ok().headers(headers).body(photoByteArray);
+        return ResponseEntity.ok()
+                .headers(HeadersUtil.createHeadersWithMediaTypeJpg())
+                .body(photoByteArray);
     }
 
     // TODO: API REQUEST BODY to MODEL ATTRIBUTE

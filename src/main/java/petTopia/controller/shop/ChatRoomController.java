@@ -1,5 +1,6 @@
 package petTopia.controller.shop;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +32,6 @@ public class ChatRoomController {
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatMessagesService chatMessagesService;
     private final ChatPhotoService chatPhotoService;
-
-    private static final String PATH_CHATROOM_PHOTO = "src/main/resources/static/chatRoomPhoto";
 
     // 客戶端發送至 `/app/send`
     @MessageMapping("/send")
@@ -73,12 +72,8 @@ public class ChatRoomController {
 
     // 上傳圖片
     @PostMapping("/api/uploadPhoto")
-    public ResponseEntity<?> uploadPhoto(@RequestBody UploadPhotoRequest request) {
-        try {
-            List<Map<String, String>> uploadedImages = chatPhotoService.uploadPhoto(request);
-            return ResponseEntity.ok(uploadedImages);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+    public ResponseEntity<?> uploadPhoto(@RequestBody UploadPhotoRequest request) throws IOException {
+        List<Map<String, String>> uploadedImages = chatPhotoService.uploadPhoto(request);
+        return ResponseEntity.ok(uploadedImages);
     }
 }

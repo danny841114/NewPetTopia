@@ -6,8 +6,6 @@ import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +17,7 @@ import petTopia.dto.shop.response.ShopProductsResponse;
 import petTopia.model.shop.Product;
 import petTopia.service.shop.ProductDetailService;
 import petTopia.service.shop.ProductService;
+import petTopia.util.HeadersUtil;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -104,11 +103,8 @@ public class ManageProductController {
 
         if (photo == null || photo.length == 0) return ResponseEntity.notFound().build();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_JPEG);
-
         return ResponseEntity.ok()
-                .headers(headers)
+                .headers(HeadersUtil.createHeadersWithMediaTypeJpg())
                 .body(photo);
     }
 

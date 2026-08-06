@@ -24,63 +24,41 @@ public class ManageProductReviewController {
 
     //所有評論
     @GetMapping("/reviews")
-    public ResponseEntity<?> getAllReviews(@RequestParam(defaultValue = "1") Integer page,
-                                           @RequestParam(defaultValue = "10") Integer size,
-                                           @RequestParam(defaultValue = "time") String sortBy) {
-        try {
-            Page<ProductReviewResponseDto> reviews = productReviewService.getAllReviews(page, size, sortBy);
-            return ResponseEntity.ok(reviews);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+    public ResponseEntity<Page<ProductReviewResponseDto>> getAllReviews(@RequestParam(defaultValue = "1") Integer page,
+                                                                        @RequestParam(defaultValue = "10") Integer size,
+                                                                        @RequestParam(defaultValue = "time") String sortBy) {
+        Page<ProductReviewResponseDto> reviews = productReviewService.getAllReviews(page, size, sortBy);
+        return ResponseEntity.ok(reviews);
     }
 
 
     // 模糊搜尋（可搜尋商品 ID、會員 ID、評論 ID 或評論描述）
     @GetMapping("/reviews/search")
-    public ResponseEntity<?> searchReviews(@RequestParam String keyword,
-                                           @RequestParam(defaultValue = "1") Integer page,
-                                           @RequestParam(defaultValue = "10") Integer size) {
-        try {
-            Page<ProductReviewResponseDto> reviews = productReviewService.searchReviews(keyword, page, size);
-            return ResponseEntity.ok(reviews);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+    public ResponseEntity<Page<ProductReviewResponseDto>> searchReviews(@RequestParam String keyword,
+                                                                        @RequestParam(defaultValue = "1") Integer page,
+                                                                        @RequestParam(defaultValue = "10") Integer size) {
+        Page<ProductReviewResponseDto> reviews = productReviewService.searchReviews(keyword, page, size);
+        return ResponseEntity.ok(reviews);
     }
 
     //刪除評論
     @DeleteMapping("/review/{reviewId}/delete")
-    public ResponseEntity<?> deleteReview(@PathVariable Integer reviewId) {
-        try {
-            productReviewService.deleteReviewById(reviewId);
-            return ResponseEntity.ok("Review deleted successfully.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+    public ResponseEntity<Void> deleteReview(@PathVariable Integer reviewId) {
+        productReviewService.deleteReviewById(reviewId);
+        return ResponseEntity.noContent().build();
     }
 
     // 獲取評分最高的前 5 名商品
     @GetMapping("/review/ratingTop5Product")
-    public ResponseEntity<?> getTop5ProductsByAverageRating() {
-        try {
-            List<ProductRatingProjection> products = productReviewService.getTop5ProductsByAverageRating();
-            return ResponseEntity.ok(products); // 200 OK
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+    public ResponseEntity<List<ProductRatingProjection>> getTop5ProductsByAverageRating() {
+        List<ProductRatingProjection> products = productReviewService.getTop5ProductsByAverageRating();
+        return ResponseEntity.ok(products);
     }
 
     // 獲取評分最高的前 3 名商品種類
     @GetMapping("/review/ratingTop3ProductDetail")
-    public ResponseEntity<?> getTop3ProductDetailsByAverageRating() {
-        try {
-            List<ProductDetailRatingProjection> productDetails = productReviewService.getTop3ProductDetailsByAverageRating();
-            return ResponseEntity.ok(productDetails); // 200 OK
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+    public ResponseEntity<List<ProductDetailRatingProjection>> getTop3ProductDetailsByAverageRating() {
+        List<ProductDetailRatingProjection> productDetails = productReviewService.getTop3ProductDetailsByAverageRating();
+        return ResponseEntity.ok(productDetails);
     }
 }

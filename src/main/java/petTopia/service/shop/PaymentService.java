@@ -1,6 +1,9 @@
 package petTopia.service.shop;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -71,7 +74,8 @@ public class PaymentService {
 
     //訂單建立後為待處理(1)，先從訂單資訊取得EC pay需要的參數
     @Transactional
-    public PaymentResponseDto processCreditCardPayment(Order order, Integer paymentCategoryId) throws Exception {
+    public PaymentResponseDto processCreditCardPayment(Order order, Integer paymentCategoryId)
+            throws UnsupportedEncodingException, NoSuchAlgorithmException {
         // 檢查是否為 paymentCategoryId == 1
         if (paymentCategoryId != 1) throw new IllegalArgumentException("只有信用卡付款才可執行該方法");
 
@@ -117,7 +121,8 @@ public class PaymentService {
 
     //告訴EC pay我有收到他回傳的狀態資料，並且核對檢查碼
     @Transactional
-    public String handleEcPayCallback(Map<String, String> callbackParams) throws Exception {
+    public String handleEcPayCallback(Map<String, String> callbackParams)
+            throws UnsupportedEncodingException, NoSuchAlgorithmException, ParseException {
         // 1. 檢查 CheckMacValue，確保回調數據有效
         if (!ecpayUtils.isValidCheckValue(callbackParams)) {
             return "0|Error: Invalid CheckMacValue"; // 格式符合 ECPay 要求

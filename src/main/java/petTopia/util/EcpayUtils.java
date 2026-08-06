@@ -19,7 +19,8 @@ public class EcpayUtils {
 //    @Value("${ecpay.hashIv}")
 //    private String hashIv;
 
-    public String createCheckValue(Map<String, String> params) throws Exception {
+    public String createCheckValue(Map<String, String> params)
+            throws UnsupportedEncodingException, NoSuchAlgorithmException {
         Map<String, String> sortedParams = new TreeMap<>(params);
         StringBuilder sb = new StringBuilder();
 
@@ -105,15 +106,16 @@ public class EcpayUtils {
         return hexString.toString();
     }
 
-    public boolean isValidCheckValue(Map<String, String> callbackParams) throws Exception {
+    public boolean isValidCheckValue(Map<String, String> callbackParams)
+            throws UnsupportedEncodingException, NoSuchAlgorithmException {
         // 1. 取出 ECPay 回傳的 CheckMacValue
-        String ecpayCheckMacValue = callbackParams.get("CheckMacValue");
+        String ecPayCheckMacValue = callbackParams.get("CheckMacValue");
 
         // 2. 重新計算 CheckMacValue
         String generatedCheckMacValue = createCheckValue(callbackParams);
 
         // 3. 比對兩者是否相同
-        return generatedCheckMacValue.equals(ecpayCheckMacValue);
+        return generatedCheckMacValue.equals(ecPayCheckMacValue);
     }
 
 }

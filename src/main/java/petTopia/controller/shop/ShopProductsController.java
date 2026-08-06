@@ -1,14 +1,13 @@
 package petTopia.controller.shop;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import petTopia.dto.shop.request.ShopProductsRequest;
 import petTopia.dto.shop.response.ShopProductResponse;
 import petTopia.service.shop.ProductDetailService;
 import petTopia.service.shop.ProductService;
+import petTopia.util.HeadersUtil;
 
 @RequiredArgsConstructor
 @RestController
@@ -31,11 +30,8 @@ public class ShopProductsController {
 
         if (photo == null || photo.length == 0) return ResponseEntity.notFound().build();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_JPEG);
-
         return ResponseEntity.ok()
-                .headers(headers)
+                .headers(HeadersUtil.createHeadersWithMediaTypeJpg())
                 .body(photo);
     }
 }

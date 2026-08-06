@@ -78,46 +78,12 @@ public class CheckOutController {
     // TODO: get memberId by credential
     @PostMapping("/checkout")
     public ResponseEntity<?> processCheckout(@RequestBody ProcessCheckout checkoutData, @RequestParam Integer memberId) {
-        Member member = memberService.getMemberById(memberId);
-
-        // 從 checkoutData 取得各種資料
         try {
-            // 從 checkoutData 取得各種資料
-            Integer couponId = checkoutData.getCouponId();
-            Integer shippingCategoryId = checkoutData.getShippingCategoryId();
-            Integer paymentCategoryId = checkoutData.getPaymentCategoryId();
-
-            // 取得購物車內的商品 ID 清單
-            List<Integer> productIdList = checkoutData.getCartItems()
-                    .stream()
-                    .map(ProcessCheckout.CartItem::getProductId)
-                    .collect(Collectors.toList());
-
-            // 收件人資訊
-            String receiverName = checkoutData.getReceiverName();
-            String receiverPhone = checkoutData.getReceiverPhone();
-            String street = checkoutData.getStreet();
-            String city = checkoutData.getCity();
-            String amount = checkoutData.getPaymentAmount();
-
-            BigDecimal paymentAmount = (amount != null) ? new BigDecimal(amount) : null;
-
             // 建立訂單
-            Order order = orderService.createOrder(
-                    member,
-                    memberId,
-                    couponId,
-                    shippingCategoryId,
-                    paymentCategoryId,
-                    paymentAmount,
-                    street,
-                    city,
-                    receiverName,
-                    receiverPhone,
-                    productIdList
-            );
+            Order order = orderService.createOrder(checkoutData, memberId);
 
             // 信用卡付款
+            Integer paymentCategoryId = checkoutData.getPaymentCategoryId();
             if (paymentCategoryId == 1) {
                 PaymentResponseDto paymentResponse = paymentService.processCreditCardPayment(order, paymentCategoryId);
 

@@ -8,9 +8,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +22,7 @@ import petTopia.model.vendor.CalendarEvent;
 import petTopia.model.vendor.VendorActivity;
 import petTopia.service.vendor_admin.ActivityTypeService;
 import petTopia.service.vendor_admin.VendorActivityServiceAdmin;
+import petTopia.util.HeadersUtil;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -158,11 +157,9 @@ public class VendorActivityController {
     @GetMapping("/photos/download")
     public ResponseEntity<?> downloadPhotoById(@RequestParam Integer photoId) {
         byte[] photo = vendorActivityServiceAdmin.getPhotoById(photoId);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_JPEG);
-
-        return ResponseEntity.ok().headers(headers).body(photo);
+        return ResponseEntity.ok()
+                .headers(HeadersUtil.createHeadersWithMediaTypeJpg())
+                .body(photo);
     }
 
     @GetMapping("/photos/ids")

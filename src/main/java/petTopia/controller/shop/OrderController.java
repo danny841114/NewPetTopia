@@ -25,45 +25,25 @@ public class OrderController {
     // TODO: Similar API existing (ManageOrderController class)
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<OrderDetailDto> getOrderDetail(@RequestParam Integer memberId, @PathVariable Integer orderId) {
-        try {
-            // 使用 Service 層方法查詢訂單詳情
-            OrderDetailDto orderDetailDto = orderDetailService.getOrderDetailById(orderId);
 
-            Integer memberLogin = orderDetailDto.getMemberId();
+        OrderDetailDto orderDetailDto = orderDetailService.getOrderDetailById(orderId);
 
-            if (!Objects.equals(memberLogin, memberId)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
+        Integer memberLogin = orderDetailDto.getMemberId();
 
-            return ResponseEntity.ok(orderDetailDto);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return Objects.equals(memberLogin, memberId)
+                ? ResponseEntity.ok(orderDetailDto)
+                : ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     @GetMapping("/orderHistory")
     public ResponseEntity<Page<OrderHistoryDto>> getOrderHistory(@ModelAttribute OrderHistoryRequest request) {
-        try {
-            Page<OrderHistoryDto> orderHistoryPage = orderService.getOrderHistoryFilter(request);
-            return ResponseEntity.ok(orderHistoryPage);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
+        Page<OrderHistoryDto> orderHistoryPage = orderService.getOrderHistoryFilter(request);
+        return ResponseEntity.ok(orderHistoryPage);
     }
 
     @PutMapping("/orders/{orderId}/cancel")
     public ResponseEntity<String> cancelOrder(@RequestParam Integer memberId, @PathVariable Integer orderId) {
-        try {
-            orderService.cancelOrder(orderId, memberId);
-
-            return ResponseEntity.ok("訂單已成功取消");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("訂單不存在或取消失敗");
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("伺服器錯誤，請稍後再試");
-        }
+        orderService.cancelOrder(orderId, memberId);
+        return ResponseEntity.ok("訂單已成功取消");
     }
 }
