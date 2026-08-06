@@ -45,13 +45,9 @@ public class VendorProfileController {
         return ResponseEntity.ok(vendorProfile);
     }
 
-    // TODO: 2026-08-06 Modify API spec, front-end not fixed
-    //  POST TO PUT
-    //  REQUEST PARAM TO BODY
-    //  Unify parameters naming to camel case
     @PutMapping("/api/vendor/update/{vendorId}")
     public ResponseEntity<HashMap<String, Object>> updateVendor(@PathVariable Integer vendorId,
-                                                                @RequestBody UpdateVendorRequest request) throws IOException {
+                                                                @ModelAttribute UpdateVendorRequest request) throws IOException {
         Vendor savedVendor = vendorProfileService.updateVendor(vendorId, request);
 
         HashMap<String, Object> response = new HashMap<>();

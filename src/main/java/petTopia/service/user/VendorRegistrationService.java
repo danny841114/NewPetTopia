@@ -161,14 +161,7 @@ public class VendorRegistrationService {
     }
 
     public User findVendorByEmail(String email) {
-        return usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR)
-                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
-    }
-
-    public User findMemberByEmail(String email) {
-        return usersRepository.findByEmailAndUserRole(email, User.UserRole.MEMBER)
-                .orElseThrow(() -> new EntityNotFoundException("User with email '" + email + "' not found"));
-
+        return usersRepository.findByEmailAndUserRole(email, User.UserRole.VENDOR).orElse(null);
     }
 
     @Transactional
@@ -335,8 +328,8 @@ public class VendorRegistrationService {
             }
 
             // 檢查是否已經有相同 email 的商家帳號
-            usersRepository.findByEmailAndUserRole(memberUser.getEmail(), User.UserRole.VENDOR)
-                    .orElseThrow(() -> new BadRequestException("此 email 已註冊為商家"));
+            Optional<User> user = usersRepository.findByEmailAndUserRole(memberUser.getEmail(), User.UserRole.VENDOR);
+            if (user.isPresent()) throw new IllegalArgumentException("此 email 已註冊為商家");
 
             Member member = memberRepository.findById(memberId)
                     .orElseThrow(() -> new EntityNotFoundException("會員資料不存在"));

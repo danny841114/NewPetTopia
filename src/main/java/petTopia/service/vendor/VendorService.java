@@ -6,12 +6,10 @@ import java.util.stream.Collectors;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 import petTopia.dto.vendor.ActivityDetail;
 import petTopia.dto.vendor.VendorDto;
 import petTopia.model.vendor.Vendor;
-import petTopia.model.vendor.VendorActivity;
 import petTopia.repository.vendor.VendorRepository;
 
 import static petTopia.constant.ImageUrl.LOGO_IMG_URL_PREFIX;
@@ -20,12 +18,9 @@ import static petTopia.constant.ImageUrl.LOGO_IMG_URL_PREFIX;
 @RequiredArgsConstructor
 @Service
 public class VendorService {
-    private static final String logoImgUrlPrefix = "/api/vendor/{vendorId}/logImg";
-
     private final VendorRepository vendorRepository;
     private final VendorReviewService vendorReviewService;
 
-    /* 所有店家清單 */
     public List<VendorDto> findAllVendor() {
         return vendorRepository.findAll()
                 .stream()
@@ -33,7 +28,6 @@ public class VendorService {
                 .toList();
     }
 
-    /* 單一店家 */
     public VendorDto findVendorById(Integer vendorId) {
         return vendorRepository.findById(vendorId)
                 .map(VendorDto::fromEntity)
@@ -47,7 +41,6 @@ public class VendorService {
                 .orElse(null);
     }
 
-    /* 排除特定店家之清單 */
     // TODO: JPQL
     public List<VendorDto> findAllVendorExceptOne(Integer vendorId) {
         List<Vendor> vendorList = vendorRepository.findAll();
@@ -62,7 +55,6 @@ public class VendorService {
                 .toList();
     }
 
-    /* 藉類別來找店家 */
     public List<VendorDto> findVendorByCategoryId(Integer categoryId) {
         return vendorRepository.findByVendorCategoryId(categoryId)
                 .stream()
@@ -70,7 +62,6 @@ public class VendorService {
                 .toList();
     }
 
-    /* 藉類別來找店家 */
     // TODO: JPQL
     public List<VendorDto> findVendorByCategoryIdExceptOne(Integer categoryId, Integer vendorId) {
         List<Vendor> vendorList = vendorRepository.findByVendorCategoryId(categoryId);
@@ -85,7 +76,6 @@ public class VendorService {
                 .toList();
     }
 
-    /* 模糊搜尋店家 */
     public List<VendorDto> findVendorByNameOrDescription(String keyword) {
         return vendorRepository.findByNameContainingOrDescriptionContaining(keyword, keyword)
                 .stream()
@@ -93,7 +83,6 @@ public class VendorService {
                 .toList();
     }
 
-    /* 取得所有 Vendor DTO */
     public List<VendorDto> getAllVendorDto() {
         return vendorRepository.findAll()
                 .stream()
@@ -108,7 +97,7 @@ public class VendorService {
 
         List<ActivityDetail> activityDtoList = vendor.getActivities()
                 .stream()
-                .map(this::convertActivityToDto)
+                .map(ActivityDetail::fromEntity)
                 .collect(Collectors.toList());
 
         return VendorDto.builder()
@@ -118,14 +107,6 @@ public class VendorService {
                 .totalRating(currentAvgRating)
                 .logoImgUrl(logoImgUrl)
                 .activityDtoList(activityDtoList)
-                .build();
-    }
-
-    private ActivityDetail convertActivityToDto(VendorActivity activity) {
-        return ActivityDetail.builder()
-                .activityId(activity.getId())
-                .activityName(activity.getName())
-                .activityDescription(activity.getDescription())
                 .build();
     }
 }

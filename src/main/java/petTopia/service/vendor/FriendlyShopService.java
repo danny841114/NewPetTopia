@@ -14,10 +14,8 @@ import org.apache.poi.util.StringUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import petTopia.dto.vendor.FriendlyShopDto;
 import petTopia.dto.vendor.request.AddFriendlyShopRequest;
 import petTopia.dto.vendor.request.ModifyFriendlyShopRequest;
@@ -27,8 +25,6 @@ import petTopia.model.vendor.VendorCategory;
 import petTopia.repository.vendor.FriendlyShopRepository;
 import petTopia.repository.vendor.VendorCategoryRepository;
 import petTopia.repository.vendor.VendorRepository;
-
-import static petTopia.dto.vendor.FriendlyShopDto.fromEntity;
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -104,12 +100,7 @@ public class FriendlyShopService {
         FriendlyShop friendlyShop = friendlyShopRepository.findFirstByVendor(vendor).orElse(null);
 
         if (friendlyShop == null) {
-            AddFriendlyShopRequest request = AddFriendlyShopRequest.builder()
-                    .name(vendor.getName())
-                    .address(vendor.getAddress())
-                    .categoryId(vendor.getVendorCategory().getId())
-                    .build();
-
+            AddFriendlyShopRequest request = AddFriendlyShopRequest.fromEntity(vendor);
             return addFriendlyShop(request);
         }
 
@@ -125,7 +116,7 @@ public class FriendlyShopService {
 
         FriendlyShop savedFriendlyShop = friendlyShopRepository.save(friendlyShop);
 
-        return fromEntity(savedFriendlyShop);
+        return FriendlyShopDto.fromEntity(savedFriendlyShop);
     }
 
     public List<FriendlyShopDto> findAll() {
@@ -165,8 +156,11 @@ public class FriendlyShopService {
     /* 新增友善店家 */
     @Transactional
     public FriendlyShopDto addFriendlyShop(AddFriendlyShopRequest request) {
-        VendorCategory category = vendorCategoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new EntityNotFoundException("Vendor category not found"));
+        VendorCategory category = null;
+        if (request.getCategoryId() != null) {
+            category = vendorCategoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new EntityNotFoundException("Vendor category not found"));
+        }
 
         FriendlyShop friendlyShop = new FriendlyShop();
         friendlyShop.setName(request.getName());

@@ -77,8 +77,8 @@ public class VendorDto {
                 .avgRatingEnvironment(vendor.getAvgRatingEnvironment())
                 .avgRatingPrice(vendor.getAvgRatingPrice())
                 .avgRatingService(vendor.getAvgRatingService())
-                .categoryId(vendor.getVendorCategory().getId())
-                .categoryName(vendor.getVendorCategory().getName())
+                .categoryId(vendor.getVendorCategory() != null ? vendor.getVendorCategory().getId() : null)
+                .categoryName(vendor.getVendorCategory() != null ? vendor.getVendorCategory().getName() : null)
                 .logoImgUrl(imgUrl)
                 .build();
     }

@@ -16,15 +16,14 @@ import lombok.Setter;
 @Entity
 @Table(name = "vendor_like")
 public class VendorLike {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private Integer id;
+    @Column(name = "member_id")
+    private Integer memberId;
 
-	@Column(name = "member_id")
-	private Integer memberId;
-
-	@Column(name = "vendor_id")
-	private Integer vendorId;
+    @Column(name = "vendor_id")
+    private Integer vendorId;
 }

@@ -30,7 +30,12 @@ public class VendorLikeService {
         return vendorLike.isPresent();
     }
 
+    @Transactional
     public Boolean toggleVendorLike(Integer memberId, Integer vendorId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new EntityNotFoundException("Member not found");
+        }
+
         VendorLike vendorLike = vendorLikeRepository.findByMemberIdAndVendorId(memberId, vendorId)
                 .orElse(null);
 
@@ -43,7 +48,7 @@ public class VendorLikeService {
             vendorLikeRepository.save(newVendorLike);
             return true;
         } else {
-            vendorLikeRepository.delete(vendorLike);
+            vendorLikeRepository.deleteByMemberIdAndVendorId(memberId,vendorId);
             return false;
         }
     }

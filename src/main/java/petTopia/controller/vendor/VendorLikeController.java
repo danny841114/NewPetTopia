@@ -6,7 +6,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import petTopia.dto.vendor.VendorLikeDto;
 import petTopia.service.vendor.VendorLikeService;
 
