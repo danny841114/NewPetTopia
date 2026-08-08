@@ -6,14 +6,17 @@ import java.util.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import petTopia.dto.vendor_admin.request.AddReviewRequest;
+import petTopia.model.user.Member;
 import petTopia.model.vendor.ReviewPhoto;
+import petTopia.model.vendor.Vendor;
 import petTopia.model.vendor.VendorReview;
+import petTopia.repository.user.MemberRepository;
 import petTopia.repository.vendor.ReviewPhotoRepository;
+import petTopia.repository.vendor.VendorRepository;
 import petTopia.repository.vendor.VendorReviewRepository;
 
 @Transactional(readOnly = true)
@@ -22,6 +25,8 @@ import petTopia.repository.vendor.VendorReviewRepository;
 public class VendorReviewsServiceAdmin {
     private final VendorReviewRepository vendorReviewRepository;
     private final ReviewPhotoRepository reviewPhotoRepository;
+    private final MemberRepository memberRepository;
+    private final VendorRepository vendorRepository;
 
     public List<VendorReview> getAllReviews() {
         return vendorReviewRepository.findAll();
@@ -61,10 +66,16 @@ public class VendorReviewsServiceAdmin {
 
     @Transactional
     public void addReview(AddReviewRequest request, MultipartFile photo) throws IOException {
+        Member member = memberRepository.findById(request.getMemberId())
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+
+        Vendor vendor = vendorRepository.findById(request.getVendorId())
+                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
+
         VendorReview review = new VendorReview();
 
-        review.setVendorId(request.getVendorId());
-        review.setMemberId(request.getMemberId());
+        review.setVendor(vendor);
+        review.setMember(member);
         review.setReviewContent(request.getReviewContent());
         review.setReviewTime(request.getReviewTime());
         review.setRatingEnvironment(request.getRatingEnvironment());

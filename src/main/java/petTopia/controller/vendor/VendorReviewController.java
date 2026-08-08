@@ -9,11 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import petTopia.dto.vendor.VendorDetail;
 import petTopia.dto.vendor.VendorReviewPhotoDto;
 import petTopia.dto.vendor.request.AddReviewRequest;
 import petTopia.dto.vendor.request.AddReviewStarRequest;
 import petTopia.dto.vendor.request.ModifyReviewRequest;
+import petTopia.dto.vendor.response.VendorReviewInfo;
 import petTopia.model.vendor.Vendor;
 import petTopia.model.vendor.VendorReview;
 import petTopia.service.vendor.ReviewPhotoService;
@@ -27,9 +27,17 @@ public class VendorReviewController {
     private final ReviewPhotoService reviewPhotoService;
 
     @GetMapping("/{vendorId}/review")
-    public ResponseEntity<List<VendorDetail>> getVendorReview(@PathVariable Integer vendorId) {
-        List<VendorDetail> reviewList = vendorReviewService.findReviewListByVendorId(vendorId);
+    public ResponseEntity<List<VendorReviewInfo>> getVendorReview(@PathVariable Integer vendorId) {
+        List<VendorReviewInfo> reviewList = vendorReviewService.findReviewListByVendorId(vendorId);
         return ResponseEntity.ok(reviewList);
+    }
+
+    @GetMapping(path = "/{vendorId}/review/{reviewId}/photo/{photoId}", produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> getVendorReviewPhoto(@PathVariable Integer vendorId,
+                                                       @PathVariable Integer reviewId,
+                                                       @PathVariable Integer photoId) {
+        byte[] photo = vendorReviewService.getVendorReviewPhoto(vendorId, reviewId, photoId);
+        return ResponseEntity.ok(photo);
     }
 
     @GetMapping("/{vendorId}/update/rating")

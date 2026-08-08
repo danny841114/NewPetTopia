@@ -5,9 +5,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import petTopia.dto.vendor.VendorLikeDto;
-import petTopia.dto.vendor.VendorDetail;
+import petTopia.dto.vendor.response.VendorReviewInfo;
 import petTopia.service.vendor.VendorLikeService;
 import petTopia.service.vendor.VendorReviewService;
 
@@ -25,8 +24,8 @@ public class MemberVendorController {
     }
 
     @GetMapping("/member/{memberId}/review")
-    public ResponseEntity<List<VendorDetail>> getReviewList(@PathVariable Integer memberId) {
-        List<VendorDetail> likeList = vendorReviewService.findReviewListByMemberId(memberId);
+    public ResponseEntity<List<VendorReviewInfo>> getReviewList(@PathVariable Integer memberId) {
+        List<VendorReviewInfo> likeList = vendorReviewService.findReviewListByMemberId(memberId);
         return ResponseEntity.ok(likeList);
     }
 

@@ -139,4 +139,10 @@ public class MemberService {
 
         log.info("用戶 {} 密碼更改成功", email);
     }
+
+    public byte[] getProfilePhotoById(Integer memberId) {
+        return memberRepository.findById(memberId)
+                .map(Member::getProfilePhoto)
+                .orElse(null);
+    }
 }

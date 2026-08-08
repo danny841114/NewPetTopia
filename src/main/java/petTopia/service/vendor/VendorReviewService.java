@@ -3,6 +3,7 @@ package petTopia.service.vendor;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -10,11 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import petTopia.dto.vendor.VendorDetail;
 import petTopia.dto.vendor.request.AddReviewRequest;
 import petTopia.dto.vendor.request.AddReviewStarRequest;
 import petTopia.dto.vendor.request.ModifyReviewRequest;
+import petTopia.dto.vendor.response.VendorReviewInfo;
 import petTopia.model.user.Member;
 import petTopia.model.vendor.ReviewPhoto;
 import petTopia.model.vendor.Vendor;
@@ -38,35 +38,29 @@ public class VendorReviewService {
         return vendorReviewRepository.findByVendorId(vendorId);
     }
 
-    /* 新增或修改文字評論 */
-//    @Transactional
-//    public void addOrModifyVendorTextReview(Integer memberId, Integer vendorId, String content) {
-//        VendorReview vendorReview = vendorReviewRepository.findFirstByMemberIdAndVendorId(memberId, vendorId)
-//                .orElse(null);
-//
-//        if (vendorReview == null) {
-//            VendorReview newVendorReview = new VendorReview();
-//
-//            newVendorReview.setMemberId(memberId);
-//            newVendorReview.setVendorId(vendorId);
-//            newVendorReview.setReviewContent(content);
-//            newVendorReview.setReviewTime(new Date());
-//
-//            vendorReviewRepository.save(newVendorReview);
-//        } else {
-//            vendorReview.setReviewContent(content);
-//            vendorReview.setReviewTime(new Date());
-//
-//            vendorReviewRepository.save(vendorReview);
-//        }
-//    }
-
     /* 查詢某個vendorId所有評價之DTO */
-    public List<VendorDetail> findReviewListByVendorId(Integer vendorId) {
+    public List<VendorReviewInfo> findReviewListByVendorId(Integer vendorId) {
         return vendorReviewRepository.findByVendorId(vendorId)
                 .stream()
-                .map(this::fromEntity)
-                .collect(Collectors.toList());
+                .map(VendorReviewInfo::fromEntity)
+                .toList();
+    }
+
+    public byte[] getVendorReviewPhoto(Integer vendorId, Integer reviewId, Integer photoId) {
+        ReviewPhoto photo = reviewPhotoRepository.findById(photoId)
+                .orElseThrow(() -> new EntityNotFoundException("Vendor review photo not found"));
+
+        Integer reviewIdFromPhoto = photo.getVendorReview().getId();
+        if (!Objects.equals(reviewIdFromPhoto, reviewId)) {
+            throw new IllegalArgumentException("Review ID not match");
+        }
+
+        Integer vendorIdFromPhoto = photo.getVendorReview().getVendor().getId();
+        if (!Objects.equals(vendorIdFromPhoto, vendorId)) {
+            throw new IllegalArgumentException("Vendor ID not match");
+        }
+
+        return photo.getPhoto();
     }
 
     /* 刪除某成員對某店家之評論及評分 */
@@ -102,10 +96,16 @@ public class VendorReviewService {
     /* 新增文字及圖片評論 */
     @Transactional
     public VendorReview addReview(Integer memberId, Integer vendorId, String content, List<MultipartFile> reviewPhotos) throws IOException {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+
+        Vendor vendor = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
+
         VendorReview review = new VendorReview();
 
-        review.setMemberId(memberId);
-        review.setVendorId(vendorId);
+        review.setMember(member);
+        review.setVendor(vendor);
         review.setReviewContent(content);
         review.setReviewTime(new Date());
 
@@ -124,11 +124,17 @@ public class VendorReviewService {
         VendorReview vendorReview = vendorReviewRepository.findFirstByMemberIdAndVendorId(memberId, vendorId)
                 .orElse(null);
 
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+
+        Vendor vendor = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
+
         if (vendorReview == null) {
             VendorReview newVendorReview = new VendorReview();
 
-            newVendorReview.setMemberId(memberId);
-            newVendorReview.setVendorId(vendorId);
+            newVendorReview.setMember(member);
+            newVendorReview.setVendor(vendor);
             newVendorReview.setRatingEnvironment(request.getRatingEnv());
             newVendorReview.setRatingPrice(request.getRatingPrice());
             newVendorReview.setRatingService(request.getRatingService());
@@ -208,20 +214,26 @@ public class VendorReviewService {
     }
 
     /* 查詢某個member所有評價之DTO */
-    public List<VendorDetail> findReviewListByMemberId(Integer memberId) {
+    public List<VendorReviewInfo> findReviewListByMemberId(Integer memberId) {
         return vendorReviewRepository.findByMemberId(memberId)
                 .stream()
-                .map(this::fromEntity)
-                .collect(Collectors.toList());
+                .map(VendorReviewInfo::fromEntity)
+                .toList();
     }
 
     /* 新增評論(完整版) */
     @Transactional
     public VendorReview addNewReview(Integer vendorId, AddReviewRequest request) throws IOException {
+        Member member = memberRepository.findById(request.getMemberId())
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+
+        Vendor vendor = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
+
         VendorReview review = new VendorReview();
 
-        review.setMemberId(request.getMemberId());
-        review.setVendorId(vendorId);
+        review.setMember(member);
+        review.setVendor(vendor);
         review.setReviewContent(request.getContent());
         review.setRatingEnvironment(request.getRatingEnv());
         review.setRatingPrice(request.getRatingPrice());
@@ -258,39 +270,6 @@ public class VendorReviewService {
         }
 
         return savedReview;
-    }
-
-    /* 將Member和VendorReview轉換成DTO */
-    private VendorDetail fromEntity(VendorReview review) {
-        Member member = memberRepository.findById(review.getMemberId())
-                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
-
-        Vendor vendor = vendorRepository.findById(review.getVendorId())
-                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
-
-        VendorDetail dto = new VendorDetail();
-
-        // 設定評價資訊
-        dto.setReviewId(review.getId());
-        dto.setVendorId(review.getVendorId());
-        dto.setVendorName(vendor.getName());
-        dto.setReviewTime(review.getReviewTime());
-        dto.setReviewContent(review.getReviewContent());
-        dto.setRatingEnvironment(review.getRatingEnvironment());
-        dto.setRatingPrice(review.getRatingPrice());
-        dto.setRatingService(review.getRatingService());
-
-        // 判斷 ReviewPhoto 是否為空，以控制按鈕
-        List<ReviewPhoto> reviewPhotos = review.getReviewPhotos();
-        dto.setHasPhotos(reviewPhotos != null && !reviewPhotos.isEmpty());
-
-        // 設定會員資訊
-        dto.setMemberId(member.getId());
-        dto.setName(member.getName());
-        dto.setGender(member.getGender());
-        dto.setProfilePhoto(member.getProfilePhoto());
-
-        return dto;
     }
 
     /* 上傳多張圖片 */

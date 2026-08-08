@@ -3,20 +3,13 @@ package petTopia.model.vendor;
 import java.util.Date;
 import java.util.List;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import net.minidev.json.annotate.JsonIgnore;
+import petTopia.model.user.Member;
 
 @Entity
 @Table(name = "vendor_review")
@@ -30,15 +23,13 @@ public class VendorReview {
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "vendor_id", nullable = false)
-    private Integer vendorId;
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
 
-//  @OneToOne(cascade = CascadeType.ALL)
-//  @JoinColumn(name = "member_id", referencedColumnName = "id")
-//	private MemberBean member;
-
-    @Column(name = "member_id", nullable = false)
-    private Integer memberId;
+    @ManyToOne
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(name = "review_time", nullable = false)
     private Date reviewTime;

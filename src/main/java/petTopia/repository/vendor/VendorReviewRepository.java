@@ -24,7 +24,7 @@ public interface VendorReviewRepository extends JpaRepository<VendorReview, Inte
 
     @Query("""
             SELECT COUNT(vr) FROM VendorReview vr
-            WHERE vr.vendorId = :vendorId
+            WHERE vr.vendor.id = :vendorId
             AND (vr.reviewContent LIKE %:keyword1%
                  OR vr.reviewContent LIKE %:keyword2%
                  OR vr.reviewContent LIKE %:keyword3%

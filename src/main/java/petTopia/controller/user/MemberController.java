@@ -97,17 +97,20 @@ public class MemberController {
 
     @GetMapping("/profile-photo")
     public ResponseEntity<byte[]> getProfilePhoto() {
-        try {
-            Member member = getMemberViaUserViaEmail();
+        Member member = getMemberViaUserViaEmail();
 
-            if (member.getProfilePhoto() == null) return ResponseEntity.notFound().build();
+        if (member.getProfilePhoto() == null) return ResponseEntity.notFound().build();
 
-            return ResponseEntity.ok()
-                    .contentType(MediaType.IMAGE_JPEG)
-                    .body(member.getProfilePhoto());
-        } catch (Exception e) {
-            log.error("獲取頭像失敗", e);
-            return ResponseEntity.internalServerError().build();
-        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .body(member.getProfilePhoto());
+    }
+
+    @GetMapping(path = "/{memberId}/photo", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getProfilePhotoById(@PathVariable Integer memberId) {
+        byte[] photo = memberService.getProfilePhotoById(memberId);
+        return photo != null
+                ? ResponseEntity.ok(photo)
+                : ResponseEntity.notFound().build();
     }
 }
