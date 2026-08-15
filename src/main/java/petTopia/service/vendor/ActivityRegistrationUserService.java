@@ -111,18 +111,29 @@ public class ActivityRegistrationUserService {
 
     @Transactional
     public ActivityPeopleNumber getPeopleNumber(Integer activityId) {
+        VendorActivity activity = vendorActivityRepository.findById(activityId)
+                .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
+
+        if (!activity.isRegistrationRequired()) return null;
+
         ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findByVendorActivityId(activityId)
-                .orElseThrow(() -> new EntityNotFoundException("Activity people number not found"));
+                .orElseGet(() -> {
+                    ActivityPeopleNumber newPeopleNumber = new ActivityPeopleNumber();
+                    newPeopleNumber.setVendorActivity(activity);
+                    newPeopleNumber.setMaxParticipants(10); // default
+                    return newPeopleNumber;
+                });
 
         Integer number = activityRegistrationRepository.countByVendorActivityId(activityId);
         peopleNumber.setCurrentParticipants(number);
+
         activityPeopleNumberRepository.save(peopleNumber);
 
         return peopleNumber;
     }
 
     public Boolean isActivityAvailable(Integer activityId) {
-        ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findById(activityId)
+        ActivityPeopleNumber peopleNumber = activityPeopleNumberRepository.findByVendorActivityId(activityId)
                 .orElseThrow(() -> new EntityNotFoundException("Activity people number not found"));
 
         Integer current = peopleNumber.getCurrentParticipants();
