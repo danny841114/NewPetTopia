@@ -23,25 +23,23 @@ public class VendorProfileController {
     private final VendorServiceAdmin vendorService;
     private final VendorProfileService vendorProfileService;
 
-    // TODO:
-    //  CHANGE RESPONSE DATA
-    @GetMapping("api/vendor_admin/status/{vendorId}")
+    // TODO: CHANGE RESPONSE DATA
+    @GetMapping("/api/vendor_admin/status/{vendorId}")
     public ResponseEntity<Map<String, Object>> getVendorStatus(@PathVariable Integer vendorId) {
         Boolean vendorStatus = vendorService.getVendorStatus(vendorId);
         return ResponseEntity.ok(Map.of("status", vendorStatus));
     }
 
-    // TODO:
-    //  CHANGE RESPONSE DATA
-    @GetMapping("api/vendor_admin/profile/{id}")
+    // TODO: CHANGE RESPONSE DATA
+    @GetMapping("/api/vendor_admin/profile/{id}")
     public ResponseEntity<Map<String, Object>> getVendor(@PathVariable Integer id) {
         Vendor vendor = vendorProfileService.getVendorById(id);
         return ResponseEntity.ok(Map.of("vendor", vendor));
     }
 
-    @GetMapping("api/vendor_admin/profile")
-    public ResponseEntity<VendorProfile> getVendorProfile(@RequestParam Integer id) {
-        VendorProfile vendorProfile = vendorProfileService.getVendorProfile(id);
+    @GetMapping("/api/vendor_admin/profile")
+    public ResponseEntity<VendorProfile> getVendorProfile(@RequestParam Integer vendorId) {
+        VendorProfile vendorProfile = vendorProfileService.getVendorProfile(vendorId);
         return ResponseEntity.ok(vendorProfile);
     }
 
