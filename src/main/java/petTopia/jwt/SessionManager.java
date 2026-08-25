@@ -11,13 +11,13 @@ import java.util.Map;
 
 /**
  * 會話管理器
- * 
+ * <p>
  * 主要功能：
  * 1. 管理用戶會話信息
  * 2. 處理用戶頭像
  * 3. 管理會員信息
  * 4. 處理 JWT 令牌相關操作
- * 
+ * <p>
  * 工作流程：
  * 1. 維護用戶會話狀態
  * 2. 處理用戶頭像的存儲和更新
@@ -26,18 +26,18 @@ import java.util.Map;
  */
 @Component
 public class SessionManager {
-    
+
     /**
      * JWT 工具類，用於處理令牌
      */
     @Autowired
     private JwtUtil jwtUtil;
-    
+
     /**
      * 更新用戶頭像
      * 將頭像數據轉換為 Base64 格式並存儲在會話中
-     * 
-     * @param session HTTP 會話
+     *
+     * @param session   HTTP 會話
      * @param photoData 頭像數據
      */
     public void updateProfilePhoto(HttpSession session, byte[] photoData) {
@@ -54,13 +54,13 @@ public class SessionManager {
             session.removeAttribute("photoVersion");
         }
     }
-    
+
     /**
      * 更新會員基本信息
-     * 
-     * @param session HTTP 會話
+     *
+     * @param session    HTTP 會話
      * @param memberName 會員名稱
-     * @param email 電子郵件
+     * @param email      電子郵件
      */
     public void updateMemberInfo(HttpSession session, String memberName, String email) {
         if (memberName != null) {
@@ -70,10 +70,10 @@ public class SessionManager {
             session.setAttribute("userEmail", email);
         }
     }
-    
+
     /**
      * 清除會話中的所有用戶相關信息
-     * 
+     *
      * @param session HTTP 會話
      */
     public void clearSession(HttpSession session) {
@@ -85,11 +85,11 @@ public class SessionManager {
         session.removeAttribute("loggedInUser");
         session.removeAttribute("userRole");
     }
-    
+
     /**
      * 從請求中提取用戶 ID
      * 優先從 JWT 令牌中獲取，如果沒有則從會話中獲取
-     * 
+     *
      * @param request HTTP 請求
      * @return 用戶 ID，如果未找到則返回 null
      */
@@ -104,21 +104,21 @@ public class SessionManager {
                 return null;
             }
         }
-        
+
         // 從會話中獲取
         HttpSession session = request.getSession(false);
         if (session != null) {
             Object userId = session.getAttribute("userId");
             return userId != null ? (Integer) userId : null;
         }
-        
+
         return null;
     }
-    
+
     /**
      * 從請求中提取用戶角色
      * 優先從 JWT 令牌中獲取，如果沒有則從會話中獲取
-     * 
+     *
      * @param request HTTP 請求
      * @return 用戶角色，如果未找到則返回 null
      */
@@ -133,28 +133,28 @@ public class SessionManager {
                 return null;
             }
         }
-        
+
         // 從會話中獲取
         HttpSession session = request.getSession(false);
         if (session != null) {
             Object userRole = session.getAttribute("userRole");
             return userRole != null ? userRole.toString() : null;
         }
-        
+
         return null;
     }
-    
+
     /**
      * 從請求中提取完整的用戶信息
      * 包括用戶 ID、角色和用戶名
-     * 
+     *
      * @param request HTTP 請求
      * @return 包含用戶信息的 Map
      */
     public Map<String, Object> getUserInfoFromToken(HttpServletRequest request) {
         String token = extractTokenFromRequest(request);
         Map<String, Object> userInfo = new HashMap<>();
-        
+
         // 嘗試從 JWT 令牌中獲取
         if (token != null) {
             try {
@@ -167,26 +167,26 @@ public class SessionManager {
                 return userInfo;
             }
         }
-        
+
         // 從會話中獲取
         HttpSession session = request.getSession(false);
         if (session != null) {
             Object userId = session.getAttribute("userId");
             Object userRole = session.getAttribute("userRole");
             Object username = session.getAttribute("userEmail");
-            
+
             if (userId != null) userInfo.put("userId", userId);
             if (userRole != null) userInfo.put("userRole", userRole);
             if (username != null) userInfo.put("username", username);
         }
-        
+
         return userInfo;
     }
-    
+
     /**
      * 檢查用戶是否已登入
      * 通過檢查 JWT 令牌或會話中的用戶信息
-     * 
+     *
      * @param request HTTP 請求
      * @return 如果用戶已登入則返回 true
      */
@@ -201,15 +201,15 @@ public class SessionManager {
                 return false;
             }
         }
-        
+
         // 檢查會話
         HttpSession session = request.getSession(false);
         return session != null && session.getAttribute("userId") != null;
     }
-    
+
     /**
      * 從請求中提取 JWT 令牌
-     * 
+     *
      * @param request HTTP 請求
      * @return JWT 令牌，如果未找到則返回 null
      */
