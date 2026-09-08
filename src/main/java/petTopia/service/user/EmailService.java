@@ -1,30 +1,34 @@
 package petTopia.service.user;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import jakarta.mail.internet.MimeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.transaction.annotation.Transactional;
 
-@Transactional(readOnly = true)
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class EmailService {
-    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
-
     private final JavaMailSender mailSender;
 
+    @Async
     public void sendVerificationEmail(String to, String code) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject("PetTopia 會員註冊驗證碼");
-        message.setText("您的驗證碼是: " + code + "\n\n此驗證碼將在5分鐘後過期。");
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(to);
+            message.setSubject("PetTopia 會員註冊驗證碼");
+            message.setText("您的驗證碼是: " + code + "\n\n此驗證碼將在5分鐘後過期。");
 
-        mailSender.send(message);
+            mailSender.send(message);
+
+            log.error("發送驗證信成功, 收信人: {}", to);
+        } catch (Exception e) {
+            log.error("發送驗證信失敗, 收信人: {}", to);
+        }
     }
 
     public void sendVerificationCode(String to, String code) {
@@ -46,9 +50,9 @@ public class EmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
-            logger.info("HTML郵件發送成功 - 收件人: {}, 主題: {}", to, subject);
+            log.info("HTML郵件發送成功 - 收件人: {}, 主題: {}", to, subject);
         } catch (Exception e) {
-            logger.error("發送HTML郵件失敗 - 收件人: {}, 主題: {}", to, subject, e);
+            log.error("發送HTML郵件失敗 - 收件人: {}, 主題: {}", to, subject, e);
             throw new RuntimeException("發送郵件失敗：" + e.getMessage());
         }
     }

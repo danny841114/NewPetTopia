@@ -1,7 +1,7 @@
 --------------------------------------------------
 -- 0. 使用者資料
 --------------------------------------------------
--- 插入使用者(會員)
+-- 插入使用者(店家)
 INSERT INTO users (password, email, user_role, email_verified, provider) VALUES
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'vendor1@example.com', 'VENDOR', 1, 'LOCAL'),
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'vendor2@example.com', 'VENDOR', 1, 'LOCAL'),
@@ -14,7 +14,7 @@ INSERT INTO users (password, email, user_role, email_verified, provider) VALUES
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'vendor9@example.com', 'VENDOR', 1, 'LOCAL'),
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'vendor10@example.com', 'VENDOR', 1, 'LOCAL');
 
--- 插入使用者(店家)
+-- 插入使用者(會員)
 INSERT INTO users (password, email, user_role, email_verified, provider) VALUES
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'member1@example.com', 'MEMBER', 1, 'LOCAL'),
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'member2@example.com', 'MEMBER', 1, 'LOCAL'),

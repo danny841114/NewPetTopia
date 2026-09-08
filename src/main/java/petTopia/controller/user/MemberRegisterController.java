@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
+import petTopia.dto.user.request.VerifyCodeRequest;
 import petTopia.model.user.User;
 import petTopia.service.user.EmailService;
 import petTopia.service.user.RegistrationService;
@@ -124,9 +125,9 @@ public class MemberRegisterController {
     }
 
     @PostMapping("/verify-code")
-    public ResponseEntity<?> verifyCode(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String code = request.get("code");
+    public ResponseEntity<?> verifyCode(@RequestBody VerifyCodeRequest request) {
+        String email = request.email();
+        String code = request.code();
 
         if (email == null || code == null) {
             return ResponseEntity.badRequest()
@@ -177,9 +178,9 @@ public class MemberRegisterController {
         // 第二步：如果內存中沒有驗證碼或驗證失敗，則檢查數據庫
         try {
             logger.info("嘗試從數據庫驗證 - 電子郵件: {}, 驗證碼: {}", email, code);
-            boolean verified = registrationService.verifyEmail(code);
+            boolean isVerified = registrationService.verifyEmail(email, code);
 
-            if (verified) {
+            if (isVerified) {
                 logger.info("驗證成功(數據庫驗證碼) - 電子郵件: {}", email);
                 return ResponseEntity.ok(Map.of(
                         "message", "驗證成功",

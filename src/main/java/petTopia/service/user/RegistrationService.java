@@ -16,7 +16,6 @@ import petTopia.model.user.User;
 import petTopia.model.user.Member;
 import petTopia.repository.user.UserRepository;
 import petTopia.repository.user.MemberRepository;
-import jakarta.persistence.EntityManager;
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -27,7 +26,6 @@ public class RegistrationService {
     private final MemberRepository memberRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
-    private final EntityManager entityManager;
 
     @Transactional
     public Map<String, Object> register(String email, String password) {
@@ -55,26 +53,23 @@ public class RegistrationService {
             user.setProvider(User.Provider.LOCAL);
 
             // 加密密碼
-            String encodedPassword = passwordEncoder.encode(user.getPassword());
+            String encodedPassword = passwordEncoder.encode(password);
             user.setPassword(encodedPassword);
 
-            // 使用 EntityManager 保存用戶
-            entityManager.persist(user);
-            entityManager.flush();
+            // 保存用戶
+            usersRepository.save(user);
             log.info("會員用戶資訊儲存成功，userId: {}", user.getId());
 
             // 創建會員資料
             Member member = new Member();
-            member.setId(user.getId());
             member.setUser(user);
             member.setName("");
             member.setPhone("");
             member.setStatus(false);
             member.setUpdatedDate(LocalDateTime.now());
 
-            // 使用 EntityManager 保存會員資料
-            entityManager.persist(member);
-            entityManager.flush();
+            // 保存會員資料
+            memberRepository.save(member);
             log.info("會員詳細資訊儲存成功，memberId: {}", member.getId());
 
             // 發送驗證郵件
@@ -95,25 +90,26 @@ public class RegistrationService {
     }
 
     @Transactional
-    public boolean verifyEmail(String code) {
-        Optional<User> userOptional = usersRepository.findByVerificationToken(code);
+    public boolean verifyEmail(String email, String code) {
+        Optional<User> userOptional = usersRepository.findByEmailAndVerificationToken(email, code);
 
-        if (userOptional.isPresent()
-                && !userOptional.get().isEmailVerified()
-                && LocalDateTime.now().isBefore(userOptional.get().getTokenExpiry())) {
-            // 更新用戶驗證狀態
+        if (userOptional.isPresent()) {
             User user = userOptional.get();
-            user.setEmailVerified(true);
-            user.setVerificationToken(null);
-            user.setTokenExpiry(null);
-            usersRepository.save(user);
 
-            // 更新會員狀態
-            Member member = memberRepository.findByUserId(user.getId()).orElse(null);
-            if (member != null) {
-                member.setStatus(true);
-                memberRepository.save(member);
-                log.info("會員驗證完成，userId: {}", user.getId());
+            if (!user.isEmailVerified() && LocalDateTime.now().isBefore(user.getTokenExpiry())) {
+                // 更新用戶驗證狀態
+                user.setEmailVerified(true);
+                user.setVerificationToken(null);
+                user.setTokenExpiry(null);
+                usersRepository.save(user);
+
+                // 更新會員狀態
+                memberRepository.findByUserId(user.getId()).ifPresent(member -> {
+                    member.setStatus(true);
+                    memberRepository.save(member);
+                    log.info("會員驗證成功，userId: {}", user.getId());
+                });
+
                 return true;
             }
         }
