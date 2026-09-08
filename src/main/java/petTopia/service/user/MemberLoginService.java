@@ -65,7 +65,7 @@ public class MemberLoginService {
             User user = userOptional.get();
 
             // 檢查是否是第三方登入帳號且未啟用本地密碼
-            if (user.getProvider() != User.Provider.LOCAL && !user.isLocalEnabled()) {
+            if (user.getProvider() != User.Provider.LOCAL && !user.getLocalEnabled()) {
                 log.warn("登入失敗：第三方登入帳號嘗試使用密碼登入，userId: {}, provider: {}", user.getId(), user.getProvider().name());
 
                 return LoginResponse.builder()
@@ -131,6 +131,7 @@ public class MemberLoginService {
             }
 
             return LoginResponse.builder()
+                    .success(true)
                     .token(token)
                     .userId(user.getId())
                     .email(user.getEmail())

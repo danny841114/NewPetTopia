@@ -26,7 +26,7 @@ INSERT INTO users (password, email, user_role, email_verified, provider) VALUES
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'member8@example.com', 'MEMBER', 1, 'LOCAL'),
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'member9@example.com', 'MEMBER', 1, 'LOCAL'),
 ('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'member10@example.com', 'MEMBER', 1, 'LOCAL'),
-('$2a$10$JEF.t.oPIVkTZSXFvFqfUuCSNhbhiDB4igj37fmWOb8rFpK5JrEVu', 'winter@example.com', 'MEMBER', 1, 'LOCAL');
+('$2a$10$JpnoxQK9pN0l33jvLLnS0ekpiVrrobB8lVn62XteXGrC3K0aMn9L.', 'winter@example.com', 'MEMBER', 1, 'LOCAL');
 
 -- 插入店家類別
 INSERT INTO vendor_category (name) VALUES

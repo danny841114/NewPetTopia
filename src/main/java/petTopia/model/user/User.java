@@ -54,7 +54,7 @@ public class User {
     private Provider provider = Provider.LOCAL;
 
     @Column(name = "local_enabled")
-    private boolean localEnabled = false;
+    private Boolean localEnabled = false;
 
     public enum UserRole {
         MEMBER, VENDOR, ADMIN
