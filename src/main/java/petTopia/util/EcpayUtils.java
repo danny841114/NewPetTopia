@@ -5,10 +5,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.TreeMap;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.stereotype.Component;
-
-import java.nio.charset.StandardCharsets;
 
 @Component
 public class EcpayUtils {
@@ -37,7 +36,7 @@ public class EcpayUtils {
         return sha256(lowerCaseString).toUpperCase();
     }
 
-    // TODO: this method need to be refactor
+    // TODO: this method need to be refactored
     private static String encodeString(String value) {
         String encoded = URLEncoder.encode(value, StandardCharsets.UTF_8);
 

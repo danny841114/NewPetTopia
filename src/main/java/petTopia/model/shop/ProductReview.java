@@ -16,14 +16,12 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import petTopia.model.user.Member;
 
 @Getter
 @Setter
 @Entity
-@NoArgsConstructor
 @Table(name = "product_review", uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "member_id"}))
 public class ProductReview {
     @Id
@@ -49,9 +47,4 @@ public class ProductReview {
 
     @OneToMany(mappedBy = "productReview", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<ProductReviewPhoto> reviewPhotos;
-
-    public ProductReview(Integer rating, String reviewDescription) {
-        this.rating = rating;
-        this.reviewDescription = reviewDescription;
-    }
 }
