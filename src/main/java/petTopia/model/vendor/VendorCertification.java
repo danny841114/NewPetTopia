@@ -40,8 +40,8 @@ public class VendorCertification {
     private String reason;
 
     @Column(name = "request_date", updatable = false)
-    private java.util.Date requestDate = new Date();
+    private Date requestDate = new Date();
 
     @Column(name = "approved_date")
-    private java.util.Date approvedDate;
+    private Date approvedDate;
 }

@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,17 +19,14 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import petTopia.dto.shop.PaymentInfoDto;
-import petTopia.dto.shop.ShippingInfoDto;
 import petTopia.model.user.Member;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "`order`")
+@Table(name = "orders")
 public class Order {
-	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -66,21 +62,16 @@ public class Order {
 
     @Column(name = "updated_date")
     private java.util.Date updatedDate;
-    
-    @Column(name="note")
+
+    @Column(name = "note")
     private String note;
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private Shipping shipping;
-    
+
     @OneToOne(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private Payment payment;
-    
-    @OneToMany(mappedBy =  "order", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    private List<OrderDetail> orderDetails;
 
-	public void setOrderStatus(Order order, int i) {
-		
-	}
-    
+    @OneToMany(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<OrderDetail> orderDetails;
 }
