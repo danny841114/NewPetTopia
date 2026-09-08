@@ -1,19 +1,20 @@
 package petTopia.model.user;
 
-import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.Objects;
 import java.util.Set;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
-@Data
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -89,10 +90,6 @@ public class User {
         if (isSuperAdmin())
             return true;
         return ADMIN_PERMISSIONS.contains(permission);
-    }
-
-    public boolean canManageUser(User targetUser) {
-        return isAdmin() && (!targetUser.isAdmin() || isSuperAdmin());
     }
 
     @Override

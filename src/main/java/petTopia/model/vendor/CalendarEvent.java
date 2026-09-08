@@ -14,6 +14,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.util.Date;
 
 @Entity
 @Table(name = "calendar_event")
@@ -22,39 +26,39 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CalendarEvent {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer eventId;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private Integer eventId;
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
 
-	
-	@ManyToOne
-	@JoinColumn(name = "vendor_id", nullable = false)
-	private Vendor vendor;
+    @Column(name = "event_title", nullable = false, length = 255)
+    private String eventTitle;
 
-	@Column(name = "event_title", nullable = false, length = 255)
-	private String eventTitle;
+    @Column(name = "start_time", nullable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date startTime;
 
-	@Column(name = "start_time", nullable = false)
-	@Temporal(TemporalType.TIMESTAMP)
-	private java.util.Date startTime;
+    @Column(name = "end_time", nullable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date endTime;
 
-	@Column(name = "end_time", nullable = false)
-	@Temporal(TemporalType.TIMESTAMP)
-	private java.util.Date endTime;
+    @Column(name = "color")
+    private String color;
 
-	@Column(name = "color")
-	private String color;
 
-	
-	@ManyToOne
-	@JoinColumn(name = "vendor_activity_id", referencedColumnName = "id", nullable = false)
-	private VendorActivity vendorActivity;
+    @ManyToOne
+    @JoinColumn(name = "vendor_activity_id", referencedColumnName = "id", nullable = false)
+    private VendorActivity vendorActivity;
 
-	@Column(name = "created_at", columnDefinition = "DATETIME DEFAULT GETDATE()", updatable = false)
-	private java.util.Date createdAt;
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private Date createdAt;
 
-	@Column(name = "updated_at", columnDefinition = "DATETIME DEFAULT GETDATE()")
-	private java.util.Date updatedAt;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private Date updatedAt;
 }
