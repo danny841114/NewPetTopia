@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -26,17 +25,15 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductCategory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name="id")
-	private Integer id;
-	
-	@Column(name="name", unique = true, nullable = false)
-	private String name;
-	
-	@JsonIgnore
-	@OneToMany(mappedBy = "productCategory", fetch = FetchType.LAZY)
+    @Column(name = "name", unique = true, nullable = false)
+    private String name;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "productCategory", fetch = FetchType.LAZY)
     private List<ProductDetail> productDetails = new ArrayList<>();
-
 }

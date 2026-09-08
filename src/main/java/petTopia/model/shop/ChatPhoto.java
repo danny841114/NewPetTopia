@@ -23,19 +23,17 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatPhoto {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private Integer id;
-	
-	@JsonIgnore
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "chat_messages_id", nullable = false)
-	private ChatMessages chatMessages;
-	
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_messages_id", nullable = false)
+    private ChatMessages chatMessages;
+
 //	@JsonIgnore
-	@Column(name="photo")
-	private String photo;
-	
+    @Column(name = "photo")
+    private String photo;
 }

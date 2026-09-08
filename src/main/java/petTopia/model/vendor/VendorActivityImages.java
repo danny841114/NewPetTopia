@@ -11,9 +11,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Lob;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,16 +27,16 @@ public class VendorActivityImages {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Integer id;
-    
+
     @JsonIgnore
-    @ManyToOne	
+    @ManyToOne
     @JoinColumn(name = "vendor_activity_id", nullable = false)
     private VendorActivity vendorActivity;
-    
+
     @Lob
     @Column(name = "image", nullable = false)
     private byte[] image;
-    
+
     /* 使用Transient防止被序列化，用於Service層賦值 */
     @Transient
     private String imageBase64;

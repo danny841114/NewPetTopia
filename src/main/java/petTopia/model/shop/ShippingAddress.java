@@ -12,17 +12,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import petTopia.model.user.Member;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
 @Table(name = "shipping_address")
 public class ShippingAddress {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

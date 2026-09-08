@@ -1,7 +1,5 @@
 package petTopia.model.shop;
 
-import java.sql.Date;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -19,7 +17,6 @@ import lombok.Setter;
 @Entity
 @Table(name = "shipping")
 public class Shipping {
-	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

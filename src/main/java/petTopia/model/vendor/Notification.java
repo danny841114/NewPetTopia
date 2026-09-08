@@ -26,37 +26,35 @@ import petTopia.model.user.Member;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Notification {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;  // 通知ID
+    private Integer id;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", referencedColumnName = "id")
-    private Member member;  // 接收通知的會員
-    
+    private Member member;
+
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendor_id", referencedColumnName = "id")
-    private Vendor vendor;  // 發送通知的店家
+    private Vendor vendor;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendor_activity_id", referencedColumnName = "id")
-    private VendorActivity vendorActivity;  // 對應的活動
+    private VendorActivity vendorActivity;
 
     @Column(name = "notification_title", nullable = false, length = 255)
-    private String notificationTitle;  // 通知標題
+    private String notificationTitle;
 
     @Column(name = "notification_content", nullable = false, length = 1000)
-    private String notificationContent;  // 通知內容
+    private String notificationContent;
 
     @Column(name = "is_read", nullable = false)
     private Boolean isRead = false;  // 是否已讀 (0: 未讀, 1: 已讀)
 
     @Column(name = "sent_time", nullable = false)
-    private LocalDateTime sentTime = LocalDateTime.now();  // 發送時間
-
+    private LocalDateTime sentTime = LocalDateTime.now();
 }
 

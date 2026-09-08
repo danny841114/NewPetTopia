@@ -14,10 +14,8 @@ import lombok.Setter;
 @Entity
 @Table(name = "payment_category")
 public class PaymentCategory {
-	
     @Id
-    @GeneratedValue
-    (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "name", nullable = false, unique = true)

@@ -4,7 +4,6 @@ import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,9 +24,9 @@ import petTopia.model.user.User;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
 @Table(name = "vendor")
+@NoArgsConstructor
 @AllArgsConstructor
 public class Vendor {
     @Id

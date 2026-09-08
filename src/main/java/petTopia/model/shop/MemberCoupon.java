@@ -11,13 +11,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import petTopia.model.user.Member;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
 @Table(name = "member_coupon")
 public class MemberCoupon {

@@ -28,9 +28,6 @@ public class ActivityLike {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-//	@Column(name = "member_id")
-//	private Integer memberId;
-
     @ManyToOne
     @JoinColumn(name = "vendor_activity_id", nullable = false)
     private VendorActivity vendorActivity;

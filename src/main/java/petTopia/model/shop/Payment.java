@@ -1,12 +1,10 @@
 package petTopia.model.shop;
 
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.util.Optional;
+import java.util.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,16 +13,13 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
 @Table(name = "payment")
 public class Payment {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -45,11 +40,11 @@ public class Payment {
     private PaymentStatus paymentStatus;
 
     @Column(name = "payment_date", nullable = false)
-    private java.util.Date paymentDate;
+    private Date paymentDate;
 
     @Column(name = "updated_date", nullable = false)
-    private java.util.Date updatedDate;
-    
+    private Date updatedDate;
+
     @Column(name = "trade_no")
     private String tradeNo;
 }
