@@ -62,7 +62,7 @@ public class Vendor {
     @Column(name = "contact_person")
     private String contactPerson;
 
-    @Column(name = "taxid_number")
+    @Column(name = "tax_id_number")
     private String taxIdNumber;
 
     @Column(name = "status", nullable = false)

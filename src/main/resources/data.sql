@@ -43,19 +43,18 @@ INSERT INTO vendor_category (name) VALUES
 ('其他');
 
 -- 插入店家資料
-INSERT INTO vendor (id, name, description, logo_img, address, phone, contact_email, contact_person, taxid_number, status, vendor_category_id, registration_date, updated_date, event_count, total_rating, review_count, vendor_level)
+INSERT INTO vendor (id, name, description, logo_img, address, phone, contact_email, contact_person, tax_id_number, status, vendor_category_id, registration_date, updated_date, event_count, total_rating, review_count, vendor_level, avg_rating_environment, avg_rating_price, avg_rating_service)
 VALUES
-(1, '毛孩天堂寵物美容', '專業寵物美容與SPA，讓毛孩擁有最舒適的體驗', NULL, '台北市大安區信義路五段100號', '02-1234-5678', 'contact1@example.com', '張小姐', '12345678', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(2, '汪喵精品寵物用品', '提供各種寵物食品與用品，滿足毛孩需求', NULL, '台中市西屯區台灣大道三段200號', '04-8765-4321', 'contact2@example.com', '李先生', '23456789', 1, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(3, '安心動物醫院', '專業獸醫團隊，提供最安心的醫療服務', NULL, '新北市板橋區中山路一段300號', '02-5566-7788', 'contact3@example.com', '王醫師', '34567890', 1, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(4, '毛孩樂園寵物寄宿', '專業照顧，給毛孩一個舒適的家', NULL, '高雄市苓雅區成功一路50號', '07-3344-5566', 'contact4@example.com', '林小姐', '45678901', 1, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(5, '寵物咖啡館喵喵汪汪', '享受美食與毛孩共度美好時光', NULL, '桃園市中壢區中華路88號', '03-5566-7788', 'contact5@example.com', '陳先生', '56789012', 1, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(6, '狗狗訓練學院', '專業狗狗訓練課程，讓愛犬變成聽話乖寶寶', NULL, '新竹市東區光復路200號', '03-3344-5566', 'contact6@example.com', '楊教練', '67890123', 1, 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(7, '海洋樂趣水族館', '專營觀賞魚、海水魚與水族設備', NULL, '台南市中西區民族路77號', '06-7788-5566', 'contact7@example.com', '趙先生', '78901234', 1, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(8, '爬寵世界', '專業飼養爬蟲類，提供高品質飼養環境與用品', NULL, '台北市松山區南京東路100號', '02-8899-6677', 'contact8@example.com', '吳先生', '89012345', 1, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(9, '毛小孩攝影館', '專為寵物打造美麗回憶的攝影棚', NULL, '台中市南屯區五權西路300號', '04-4455-6677', 'contact9@example.com', '周小姐', '90123456', 1, 9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通'),
-(10, '手作寵物小物', '手工製作寵物衣物與配件，獨一無二的設計', NULL, '彰化市中正路150號', '04-7788-5566', 'contact10@example.com', '戴小姐', '01234567', 1, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 0, '普通');
-
+(1, '毛孩天堂寵物美容', '專業寵物美容與SPA，讓毛孩擁有最舒適的體驗', NULL, '台北市大安區信義路五段100號', '02-1234-5678', 'contact1@example.com', '張小姐', '12345678', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.8, 12, '普通', 4.9, 4.5, 5.0),
+(2, '汪喵精品寵物用品', '提供各種寵物食品與用品，滿足毛孩需求', NULL, '台中市西屯區台灣大道三段200號', '04-8765-4321', 'contact2@example.com', '李先生', '23456789', 1, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.2, 8, '普通', 4.0, 4.5, 4.1),
+(3, '安心動物醫院', '專業獸醫團隊，提供最安心的醫療服務', NULL, '新北市板橋區中山路一段300號', '02-5566-7788', 'contact3@example.com', '王醫師', '34567890', 1, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.9, 25, '普通', 5.0, 4.7, 5.0),
+(4, '毛孩樂園寵物寄宿', '專業照顧，給毛孩一個舒適的家', NULL, '高雄市苓雅區成功一路50號', '07-3344-5566', 'contact4@example.com', '林小姐', '45678901', 1, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.5, 10, '普通', 4.6, 4.2, 4.7),
+(5, '寵物咖啡館喵喵汪汪', '享受美食與毛孩共度美好時光', NULL, '桃園市中壢區中華路88號', '03-5566-7788', 'contact5@example.com', '陳先生', '56789012', 1, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.1, 15, '普通', 4.5, 3.8, 4.0),
+(6, '狗狗訓練學院', '專業狗狗訓練課程，讓愛犬變成聽話乖寶寶', NULL, '新竹市東區光復路200號', '03-3344-5566', 'contact6@example.com', '楊教練', '67890123', 1, 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.7, 18, '普通', 4.8, 4.4, 4.9),
+(7, '海洋樂趣水族館', '專營觀賞魚、海水魚與水族設備', NULL, '台南市中西區民族路77號', '06-7788-5566', 'contact7@example.com', '趙先生', '78901234', 1, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.0, 5, '普通', 4.1, 4.0, 3.9),
+(8, '爬寵世界', '專業飼養爬蟲類，提供高品質飼養環境與用品', NULL, '台北市松山區南京東路100號', '02-8899-6677', 'contact8@example.com', '吳先生', '89012345', 1, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.4, 9, '普通', 4.3, 4.5, 4.4),
+(9, '毛小孩攝影館', '專為寵物打造美麗回憶的攝影棚', NULL, '台中市南屯區五權西路300號', '04-4455-6677', 'contact9@example.com', '周小姐', '90123456', 1, 9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.9, 30, '普通', 5.0, 4.8, 4.9),
+(10, '手作寵物小物', '手工製作寵物衣物與配件，獨一無二的設計', NULL, '彰化市中正路150號', '04-7788-5566', 'contact10@example.com', '戴小姐', '01234567', 1, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 4.3, 7, '普通', 4.2, 4.6, 4.1);
 -- 插入會員資料
 INSERT INTO member (id, name, phone, birthdate, gender, address, status) VALUES
 (11, '陳莉絲', '0912345678', '1990-01-01', 1, '台北市中正區仁愛路1號', 1),
